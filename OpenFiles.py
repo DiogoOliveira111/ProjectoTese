@@ -8,3 +8,5 @@ path = easygui.fileopenbox()
 
 with open(path, 'rb') as handle:
     collection= pickle.load(handle)
+
+#print(collection)
