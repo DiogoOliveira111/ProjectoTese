@@ -40,6 +40,4 @@ for i in collection:
 MouseDict = dict(t=MouseTime, x=MouseX, y=MouseY)
 dM = pd.DataFrame.from_dict(MouseDict)
 
-time_var,space_var=interpolate_data(dM,t_abandon=20)
 
-print(time_var)
