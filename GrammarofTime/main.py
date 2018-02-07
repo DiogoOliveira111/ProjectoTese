@@ -3,6 +3,7 @@ import pickle
 from WBMTools.sandbox.interpolation import interpolate_data
 import GrammarofTime.gotstools as gt
 import numpy as np
+import matplotlib.pyplot as plot
 
 MouseX = []
 MouseY = []
@@ -30,7 +31,7 @@ MouseDict = dict(t=MouseTime, x=MouseX, y=MouseY)
 dM = pd.DataFrame.from_dict(MouseDict)
 
 time_var,space_var=interpolate_data(dM,t_abandon=20)
-
+plot(time_var['jitter'])
 cfg={ "pre_processing": "V",
       "connotation": "⇞0.8",
       "expression": "1+"}

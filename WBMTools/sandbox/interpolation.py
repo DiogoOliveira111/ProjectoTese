@@ -68,7 +68,7 @@ def interpolate_data(track_variables, t_abandon, t_crop=pl.Inf, begin=0, end=-1)
 	x_f = smooth(x)
 	y_f = smooth(y)
 	s_f = get_s(x_f, y_f)
-	jitter = s_f[-1] / _s[-1]
+	jitter = s_f[-1] / _s[-1] #é suposto ser um valor unico?
 
 	t_temp = t
 
@@ -140,7 +140,7 @@ def interpolate_data(track_variables, t_abandon, t_crop=pl.Inf, begin=0, end=-1)
 																						** 2))) / s_strokes[-1])
 
 	ss = get_s(xs, ys)
-	print(ss)
+	#print(ss)
 
 	# angle = atan(dy/dx)
 	# unwrap removes discontinuities.
@@ -157,7 +157,7 @@ def interpolate_data(track_variables, t_abandon, t_crop=pl.Inf, begin=0, end=-1)
 	var_curvature = pl.array(pl.diff(curvature) / pl.diff(ss)[:-2])
 
 	st = get_s(xt, yt)
-	print(st)
+	#print(st)
 	# Save t_pauses > 1 sec
 	# Save t_pauses < abandon
 	t_pauses = pl.array(t_pauses)
@@ -195,7 +195,7 @@ def interpolate_data(track_variables, t_abandon, t_crop=pl.Inf, begin=0, end=-1)
 	a = pl.diff(vt) / pl.diff(t)
 	jerk = pl.diff(a) / pl.diff(t[:-1])
 
-	space_variables = dict(xs= xs[::20],
+	space_variables = dict(			xs= xs[::20],
 									ys= ys[::20],
 									l_strokes=pl.array(l_strokes),
 									straightness= pl.array(straightness),

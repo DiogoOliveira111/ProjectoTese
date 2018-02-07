@@ -3,10 +3,9 @@ import pandas as pd
 from WBMTools.sandbox.interpolation import interpolate_data
 from tkinter import Tk, Label
 import GrammarofTime.gotstools as gt
+import matplotlib.pyplot as plt
 
 flag=0
-
-
 MouseTime=[]
 MouseX=[]
 MouseY=[]
@@ -40,4 +39,16 @@ for i in collection:
 MouseDict = dict(t=MouseTime, x=MouseX, y=MouseY)
 dM = pd.DataFrame.from_dict(MouseDict)
 
+time_var,space_var=interpolate_data(dM,t_abandon=20)
+#print(time_var['vt'])
 
+plt.plot(time_var['vt'])
+plt.show()
+
+
+cfg={ "pre_processing": "V",
+     "connotation": "⇞0.8",
+     "expression": "1+"}
+
+matches=gt.ssts(dM, cfg)
+gt.plot_matches(dM, matches)

@@ -538,7 +538,7 @@ def open_files():  # opens the file collection and creates de dataset to be used
 
     for i in collection:
         event = collection[i]
-        print(i)
+        #print(i)
 
         if (event['Type'] == 'Mouse'):
 
@@ -578,12 +578,24 @@ def Jerk(data):
 
 def Straightness(data):
     time_var, space_var = interpolate_data(data, t_abandon=20)
-    return time_var['straightness']
+    return space_var['straightness']
 
 def AngVelocity(data):
     time_var, space_var = interpolate_data(data, t_abandon=20)
-    return time_var['w']
+    return space_var['w']
 
 def Curvature(data):
     time_var, space_var = interpolate_data(data, t_abandon=20)
-    return time_var['Curvature']
+    return space_var['curvatures']
+
+def CurvatureVariation(data):
+    time_var, space_var = interpolate_data(data,t_abandon=20)
+    return space_var['var_curvatures']
+
+def StrokeLength(data):
+    time_var, space_var = interpolate_data(data,t_abandon=20)
+    return space_var['l_strokes']
+
+def Jitter(data):
+    time_var, space_var = interpolate_data(data, t_abandon=20)
+    return space_var['jitter']

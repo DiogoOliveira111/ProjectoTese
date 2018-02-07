@@ -224,7 +224,7 @@ def reorder_data(data):
 	"""
 
 	data = data.sort_values(['t', 'x', 'y'])
-	print(data)
+	#print(data)
 	# print(data)
 	# index = data[0]
 	# lost_samples = sum(pl.diff(index) - 1)

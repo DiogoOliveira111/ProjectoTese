@@ -6,7 +6,17 @@
             "~": "smooth",
             "∥": "abs",
             "⊚": "stat_white",
-            "V": "Velocity"
+            "V": "Velocity",
+            "Vx": "VelocityinX",
+            "Vy": "VelocityinY",
+            "A": "Acceleration",
+            "Jk": "Jerk",
+            "Jt": "Jitter",
+            "Str": "Straightness",
+            "w" : "Angular Velocity",
+            "Curv": "Curvature",
+            "VarCurv": "CurvatureVariation",
+            "StrokeLen": "StrokeLength"
   },
   "connotation": {
             "⇞": "AmpC",
