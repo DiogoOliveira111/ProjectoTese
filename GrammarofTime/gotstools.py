@@ -470,6 +470,7 @@ def ssts(s, cfg, report='clean'):
                             operands += subval + ','
 
                     if operands is "":
+                        print(gots_func_dict["pre_processing"][operator] + '(ns[' + str(i) + '])')
                         ns[i] = eval(gots_func_dict["pre_processing"][operator] + '(ns[' + str(i) + '])')
                     else:
                         ns[i] = eval(
@@ -491,6 +492,7 @@ def ssts(s, cfg, report='clean'):
                 elif val[0] == "[" and val[-1] == "]":
                     continue
                 elif val not in list(gots_func_dict["connotation"].keys()):
+                    print(val)
                     sys.exit('Unknown connotation symbol.')
                 else:
                     operator = val
@@ -557,6 +559,7 @@ def open_files():  # opens the file collection and creates de dataset to be used
     dM = pd.DataFrame.from_dict(MouseDict)
 
 def Velocity(data):
+    print(data)
     time_var, space_var = interpolate_data(data, t_abandon=20)
     return time_var['vt']
 
