@@ -47,8 +47,9 @@ dM = pd.DataFrame.from_dict(MouseDict)
 # vx = time_var["vx"]
 
 
-str = "xt"
+str = "xt a"
 s = load(dM, str)
+# print(s)
 
 #s = np.array([v, vx])
 #print(time_var['vt'])
@@ -60,10 +61,9 @@ cfg={"pre_processing":"",
      "connotation": "⇞ 0.8",
      "expression": "1+"}
 
-
 matches=gt.ssts(s, cfg)
 print(matches)
 
-gt.plot_matches(s[0], matches, scatter=False)
+gt.plot_matches(s, matches, scatter=True)
 
 plt.show()

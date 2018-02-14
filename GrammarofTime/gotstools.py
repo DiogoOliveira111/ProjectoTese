@@ -382,14 +382,22 @@ def merge_chars(string_matrix):
     that each string is organized in the StringMatrix argument as a column.
     The function returns the merged string.
     """
+
     col = np.size(string_matrix, axis=0)
     lines = np.size(string_matrix, axis=1)
+
     Str = ""
     for l in range(0, lines):
         for c in range(0, col):
             Str += str(string_matrix[c][l])
 
     return Str
+
+def int2str(s):
+    strS = ''
+    for i in range(len(s)):
+        strS+=str(s[i])
+    return strS
 
 
 def vmagnitude(v):
@@ -428,7 +436,7 @@ def plot_matches(s, m, scatter=False):
 
 
 # Main methods
-def ssts(s, cfg, report='clean'):
+def ssts(s, cfg, report='clean', analysis='singular'):
     """
     Performs a query on a given time series based upon on a syntactic approach.
     :param s: array-like
@@ -445,10 +453,14 @@ def ssts(s, cfg, report='clean'):
         The signal segment that corresponds to the query result.
     """
     # Handles exception to multisignal approach.
+    # print(s)
     s = np.asarray(s)
-    if s.ndim == 1:
+    print(s.ndim)
+    print(len(s))
+    if len(s) == 1:
         s = np.array([s])
     ns = np.copy(s)
+    # print(len(ns))
 
     # Layer 1: Pre-processing
     pp_str = prep_str(cfg["pre_processing"], len(ns))
@@ -511,15 +523,30 @@ def ssts(s, cfg, report='clean'):
 
                     operands = ""
                     merged_sc_str += [_constr]
+
             else:
                 continue
-    constr = merge_chars(merged_sc_str)
+
+
 
     # Layer 3: Search
-    matches = []
-    regit = re.finditer(cfg["expression"], constr)
-    [matches.append((int(i.span()[0] / np.shape(merged_sc_str)[0]),
-                     int(i.span()[1] / np.shape(merged_sc_str)[0]))) for i in regit]
+    if(analysis=='singular'):
+        matches = []
+        constr = int2str(merged_sc_str[i])
+        for i in range(len(ns)):
+            match = []
+            print()
+            regit = re.finditer(cfg["expression"], constr)
+            [match.append((int(i.span()[0]),
+                             int(i.span()[1]))) for i in regit]
+            matches.append(match)
+
+    elif (analysis =='complete'):
+        constr = merge_chars(merged_sc_str)
+        matches = []
+        regit = re.finditer(cfg["expression"], constr)
+        [matches.append((int(i.span()[0] / np.shape(merged_sc_str)[0]),
+                         int(i.span()[1] / np.shape(merged_sc_str)[0]))) for i in regit]
 
     # removes unnecessary nesting in case ndim is 1.
     if ns.shape[0] == 1:
@@ -557,6 +584,7 @@ def open_files():  # opens the file collection and creates de dataset to be used
 
     MouseDict = dict(x=MouseX, y=MouseY, t=MouseTime)
     dM = pd.DataFrame.from_dict(MouseDict)
+    return dM
 
 def Velocity(data):
     print(data)
