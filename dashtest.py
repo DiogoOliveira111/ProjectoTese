@@ -49,12 +49,11 @@ for i in collection:
 
 MouseDict = dict(t=MouseTime, x=MouseX, y=MouseY)
 dM = pd.DataFrame.from_dict(MouseDict)
-# time_var,space_var=interpolate_data(dM,t_abandon=20)
-
+time_var,space_var=interpolate_data(dM,t_abandon=20)
 app = dash.Dash()
 
 colors = {
-    'background': '#111111',
+    'background': '#ffffff',
     'text': '#7FDBFF'
 }
 
@@ -78,8 +77,8 @@ html.Div(children= dcc.Graph(
         figure={
             'data': [
                 go.Scatter(
-                    x = dM['x'],
-                    y= dM['y'],
+                    y = time_var['vt'],
+                    x= dM.index,
                     mode= 'markers',
                     opacity=0.7,
                     marker={
@@ -98,7 +97,20 @@ html.Div(children= dcc.Graph(
 
         }
 
-    ))
+    ))  ,
+
+html.Div(
+    children=dcc.RadioItems(
+
+    options=[
+        {'label': 'X Y Position', 'value': 'Pos'},
+        {'label': 'Heatmap', 'value': 'Heatmap'},
+    ],
+    value='Pos',
+    labelStyle={'display': 'inline-block'}
+
+    )
+)
 ])
 
 if __name__ == '__main__':
