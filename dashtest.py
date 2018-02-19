@@ -77,8 +77,8 @@ html.Div(children= dcc.Graph(
         figure={
             'data': [
                 go.Scatter(
-                    y = time_var['vt'],
-                    x= dM.index,
+                    y = space_var['ys'],
+                    x= space_var['xs'],
                     mode= 'markers',
                     opacity=0.7,
                     marker={

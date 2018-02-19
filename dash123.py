@@ -7,7 +7,7 @@ import easygui
 import pickle
 from tkinter import Tk, Label
 from WBMTools.sandbox.interpolation import interpolate_data
-
+traces =[]
 path = easygui.fileopenbox()
 
 with open(path, 'rb') as handle:
@@ -47,10 +47,57 @@ for i in collection:
 MouseDict = dict(t=MouseTime, x=MouseX, y=MouseY)
 dM = pd.DataFrame.from_dict(MouseDict)
 time_var,space_var=interpolate_data(dM,t_abandon=20)
-
+vars={'time_var': time_var, 'space_var': space_var}
 app = dash.Dash()
 
-app.layout = html.Div([
+colors = {
+    'background': '#ffffff',
+    'text': '#7FDBFF'
+}
+
+app.layout = html.Div(style={'backgroundColor': colors['background']}, children=[
+    html.H1(
+        children='Hello',
+        style={
+            'textAlign': 'center',
+            'color': colors['text']
+        }
+    ),
+
+    html.Div(children='Dash: A web application framework for Python.', style={
+        'textAlign': 'center',
+        'color': colors['text']
+    }),
+
+html.Div(children= dcc.Graph(
+        id='PosGraf',
+        figure={
+            'data': [
+                go.Scatter(
+                    y = MouseDict['y'],
+                    x= MouseDict['x'],
+                    mode= 'markers',
+                    opacity=0.7,
+                    marker={
+                        'size':7,
+                        'line':{'width' : 0.5 , 'color': 'white'}
+                    }
+                )
+
+            ],
+            'layout': go.Layout(
+                xaxis={ 'title': 'X position'},
+                yaxis={'title': 'y position'},
+                margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
+                legend={'x': 0, 'y': 1},
+                hovermode='closest')
+
+        }
+
+    )),
+
+
+    html.Div([
     dcc.Graph(id='graph-with-slider'),
     dcc.RadioItems(
         id='Radio',
@@ -62,31 +109,35 @@ app.layout = html.Div([
            {'label': 'Y Position in t', 'value': 'yt'},
            {'label' : 'Velocity', 'value': 'vt'},
             {'label' : 'Acceleration', 'value': 'a'}
-       ], value=['a']
+       ], value='a'
 
-    )
-])
+    ),
+    html.Button('Interpolate', id='interpolate', type='submit'),
+    html.Div(id='output_spacevar',
+             children='')
 
+])])
 
 @app.callback(
     dash.dependencies.Output('graph-with-slider', 'figure'),
     [dash.dependencies.Input('Radio', 'value')])
-
 def update_figure(selected_option):
-    print(str(selected_option))
+
+    #print(space_var)
+    #print(len(time_var['xt']))
     #filtered_df = dM[selected_option]
 
     traces=[]
     traces.append(go.Scatter(
-            x=dM.index,
+            x=time_var['tt'],
             y=time_var[str(selected_option)],
             text=selected_option[0],
-            mode='markers',
             opacity=0.7,
-            marker={
-                'size': 15,
-                'line': {'width': 0.5, 'color': 'white'}
-            },
+            # marker={
+            #     'size': 5,
+            #     'line': {'width': 0.5, 'color': 'white'}
+            # },
+            line= {'width': 2, 'color': 'black'},
             name=i
         ))
 
@@ -100,6 +151,18 @@ def update_figure(selected_option):
             hovermode='closest'
         )
     }
+
+# @app.callback(
+#     dash.dependencies.Output('PosGraf', 'figure'),
+#     [dash.dependencies.Event('interpolate', 'n_clicks')])
+
+@app.callback(dash.dependencies.Output('output_spacevar', 'children'),
+              [dash.dependencies.Input('interpolate', 'n_clicks')])
+def display_spacevar(n_clicks):
+    return "length of strokes: ["
+        # + min(space_var['l_strokes'])+ ","+ max(space_var['l_strokes'])+"\n"+\
+         #  "Straightness: ["+ min(space_var['straightness']) + ","+ max(space_var['straightness'])+"\n"
+
 
 
 if __name__ == '__main__':
