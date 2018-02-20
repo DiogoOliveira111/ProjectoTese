@@ -7,6 +7,8 @@ import easygui
 import pickle
 from tkinter import Tk, Label
 from WBMTools.sandbox.interpolation import interpolate_data
+import numpy as np
+import matplotlib.pyplot as plt
 traces =[]
 path = easygui.fileopenbox()
 
@@ -95,10 +97,18 @@ html.Div(children= dcc.Graph(
         }
 
     )),
+html.Div(
+    dcc.RadioItems(id='Radioheatmap',
+       options=[
+           {'label': 'Positional Map', 'value': 'xy'},
+           {'label': 'Heatmap', 'value': 'heat'},
+       ], value='xy'
+
+    )),
 
 
     html.Div([
-    dcc.Graph(id='graph-with-slider'),
+    dcc.Graph(id='timevar_graph'),
     dcc.RadioItems(
         id='Radio',
        options=[
@@ -112,14 +122,16 @@ html.Div(children= dcc.Graph(
        ], value='a'
 
     ),
-    html.Button('Interpolate', id='interpolate', type='submit'),
-    html.Div(id='output_spacevar',
-             children='')
+    html.Button('Interpolate', id='interpolate'),
+    html.Div(id='output_spacevar'),
+             dcc.Markdown(id='text_spacevar')
 
 ])])
 
+
+
 @app.callback(
-    dash.dependencies.Output('graph-with-slider', 'figure'),
+    dash.dependencies.Output('timevar_graph', 'figure'),
     [dash.dependencies.Input('Radio', 'value')])
 def update_figure(selected_option):
 
@@ -152,16 +164,101 @@ def update_figure(selected_option):
         )
     }
 
-# @app.callback(
-#     dash.dependencies.Output('PosGraf', 'figure'),
-#     [dash.dependencies.Event('interpolate', 'n_clicks')])
+@app.callback(
+    dash.dependencies.Output('PosGraf', 'figure'),
+    [dash.dependencies.Input('interpolate', 'n_clicks'),
+     dash.dependencies.Input('Radioheatmap', 'value')])
+def interpolate_graf(n_clicks, value):
+    if(value=='xy'):
+        if(n_clicks == None):
+            pass
+        else:
+            traces = []
+            traces.append(go.Scatter(
+                x=space_var['xs'],
+                y=space_var['ys'],
+                #text=selected_option[0],
+                opacity=0.7,
+                # marker={
+                #     'size': 5,
+                #     'line': {'width': 0.5, 'color': 'white'}
+                # },
+                line={'width': 2, 'color': 'black'},
+                name=i
+            ))
 
-@app.callback(dash.dependencies.Output('output_spacevar', 'children'),
+            return {
+                'data': traces,
+                'layout': go.Layout(
+                    xaxis={'title': 'X position Interpolated'},
+                    yaxis={'title': 'Y position Interpolated'},
+                    legend={'x': 0, 'y': 1},
+                    hovermode='closest'
+                )
+            }
+    elif(value =='heat'):
+        x=MouseDict['x']
+        y=MouseDict['y']
+        traces=[go.Histogram2d(x=x, y=y,
+                            #colorscale='YIGnBu',
+                            zmax=10,
+                            nbinsx=30,
+                            nbinsy=30,
+                            zauto=False)]
+        return {
+            'data': traces,
+            'layout': go.Layout(
+                xaxis=dict(ticks='', showgrid=False, zeroline=False, nticks=20),
+                yaxis=dict(ticks='', showgrid=False, zeroline=False, nticks=20),
+                autosize=True,
+                hovermode='closest',
+            )
+            }
+
+
+@app.callback(dash.dependencies.Output('text_spacevar', 'children'),
               [dash.dependencies.Input('interpolate', 'n_clicks')])
 def display_spacevar(n_clicks):
-    return "length of strokes: ["
-        # + min(space_var['l_strokes'])+ ","+ max(space_var['l_strokes'])+"\n"+\
-         #  "Straightness: ["+ min(space_var['straightness']) + ","+ max(space_var['straightness'])+"\n"
+    if(n_clicks!= None):
+        return "Length of strokes: [{0}, {1}] /n" \
+                "Straightness: [{0}, {1}] /n " \
+               "Jitter: [{4}]  /n" \
+                "Angles: [{5}, {6}] /n" \
+               "Angular Velocity (w): [{7}, {8}] /n"\
+                "Curvature: [{9}, {10}] /n".format(
+                str(round(min(space_var['l_strokes']),2)),
+                str(round(max(space_var['l_strokes']), 2)),
+                str(round(min(space_var['straightness']), 2)),
+                str(round(max(space_var['straightness']), 2)),
+                str(round(space_var['jitter'],3)),
+                str(round(min(space_var['angles']), 2)),
+                str(round(max(space_var['angles']), 2)),
+                str(round(min(space_var['w']), 2)),
+                str(round(max(space_var['w']), 2)),
+                str(round(min(space_var['curvatures']), 2)),
+                str(round(max(space_var['curvatures']), 2))
+                                                )
+
+
+        #        +"Straightness: ["+ str(round(min(space_var['straightness']),2)) + ","+ str(round(max(space_var['straightness']),2))+"]/n    " \
+        #         + "Jitter: "+ str(space_var['jitter']) \
+        #          + "Angles: ["+str(round(min(space_var['angles']),2))+","+ str(round(max(space_var['angles']),2))+"]/n" \
+        #         + "Angular Velocity (w): ["+str(round(min(space_var['w']),2))+","+str(round(max(space_var['w']),2))+"]/n"\
+        #          + "Curvature: ["+str(round(min(space_var['curvatures']),2))+","+str(round(max(space_var['curvatures']),2))+"]/n"
+        # .format(str(round(min(space_var['l_strokes']),2)),
+        #         str(round(max(space_var['l_strokes']), 2)),
+        #         str(round(min(space_var['straightness']), 2)),
+        #         str(round(max(space_var['straightness']), 2)),
+        #         str(space_var['jitter']),
+        #         str(round(min(space_var['angles']), 2)),
+        #         str(round(max(space_var['angles']), 2)),
+        #         str(round(min(space_var['w']), 2)),
+        #         str(round(max(space_var['w']), 2)),
+        #         str(round(min(space_var['curvatures']), 2)),
+        #         str(round(max(space_var['curvatures']), 2))
+        #         )
+        #
+
 
 
 
