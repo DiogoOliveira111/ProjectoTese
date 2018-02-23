@@ -24,6 +24,7 @@ prevb4= 0
 
 lastclick=0
 lastclick1=0
+lastclick2=0
 finalStr=""
 from scipy import signal
 from scipy.signal import filtfilt
@@ -360,6 +361,22 @@ def RiseAmp(Signal, t):
 
     return risingH
 
+def merge_chars(string_matrix):
+    """
+    Function performs the merge of the strings generated with each method. The function assumes
+    that each string is organized in the StringMatrix argument as a column.
+    The function returns the merged string.
+    """
+
+    col = np.size(string_matrix, axis=0)
+    lines = np.size(string_matrix, axis=1)
+
+    Str = ""
+    for l in range(0, lines):
+        for c in range(0, col):
+            Str += str(string_matrix[c][l])
+
+    return Str
 
 path = easygui.fileopenbox()
 
@@ -521,6 +538,7 @@ html.Div(
         placeholder='Enter Regular Expression...',
         type='text',
         value=''),
+        html.Button('Search Regex', id='searchregex'),
         dcc.Graph(id='regexgraph')
     ])
 
@@ -530,18 +548,23 @@ html.Div(
 @app.callback(
     dash.dependencies.Output('regexgraph', 'figure'),
     [dash.dependencies.Input('regex', 'value'),
-     dash.dependencies.Input('SCtest', 'value')]
+     dash.dependencies.Input('SCtest', 'value'),
+     dash.dependencies.Input('searchregex', 'n_clicks')]
 )
-def findRegex(regex, string):
-    str=numpy.asarray(string)
-    matches = []
-    # for i in range(len(str)):
-    #     match=[]
-    #     regit = re.finditer(regex,string)
-    #     [match.append((int(i.span()[0]),
-    #                    int(i.span()[1]))) for i in regit]
-    #     matches.append(match)
-    return matches
+def RegexParser(regex, string, n_clicks):
+    global lastclick2
+
+    if (n_clicks != None):
+        if(n_clicks>lastclick2):
+            str=numpy.asarray(string)
+            matches = []
+            for i in range(len(str)):
+                match=[]
+                regit = re.finditer(regex,string)
+                [match.append((int(i.span()[0]),
+                               int(i.span()[1]))) for i in regit]
+                matches.append(match)
+            return matches
 
 
 
@@ -588,7 +611,7 @@ def SymbolicConnotationWrite(a1,a2,a3,a4, finalStr):
 
 def SymbolicConnotationStringParser(n_clicks, parse, data):
     global lastclick1
-    finalString=""
+    finalString=[]
     if (n_clicks != None):
         if(n_clicks>lastclick1): # para fazer com que o graf so se altere quando clicamos no botao e nao devido aos outros callbacks-grafico ou input box
             CutString=parse.split()
@@ -596,23 +619,24 @@ def SymbolicConnotationStringParser(n_clicks, parse, data):
                 if(CutString[i] =='A'):
                     #function Amp
 
-                    finalString=AmpC(data['data'][0]['y'],int(CutString[i+1]))
+                    finalString.append(AmpC(data['data'][0]['y'],int(CutString[i+1])))
 
                 elif(CutString[i] =='1D'):
                     #Function 1st Derivative
-                    finalString = DiffC(data['data'][0]['y'], int(CutString[i + 1]))
+                    finalString.append( DiffC(data['data'][0]['y'], int(CutString[i + 1])))
 
                 elif (CutString[i] == '2D'):
                     #Function 2nd Derivative
-                    finalString = Diff2C(data['data'][0]['y'], int(CutString[i + 1]))
+                    finalString.append( Diff2C(data['data'][0]['y'], int(CutString[i + 1])))
 
                 elif (CutString[i] == 'R'):
-                    #Function Smooth
-                    finalString = RiseAmp(data['data'][0]['y'], int(CutString[i + 1]))
+                    #Function RiseAmp
+                    finalString.append(RiseAmp(data['data'][0]['y'], int(CutString[i + 1])))
 
 
         lastclick1=n_clicks
-    return finalString
+        finalString=merge_chars(np.array(finalString))  # esta a dar um erro estranho quando escrevo a caixa
+        return finalString
 
 
 @app.callback(
@@ -644,7 +668,9 @@ def PreProcessStringParser(n_clicks, parse, data):
 
                 elif (CutString[i] == 'S'):
                     #Function Smooth
-                    data['data'][0]['y'] = numpy.asarray(smooth(data['data'][0]['y']), int(CutString[i+1]))
+                    smooth_signal = smooth(np.array(data['data'][0]['y'])), int(CutString[i+1]) #estranho porque o smooth retorna uma lista com os dados na 1ªpos e o valor do smooth na segunda
+                    data['data'][0]['y']=smooth_signal[0]
+
 
 
         lastclick=n_clicks
