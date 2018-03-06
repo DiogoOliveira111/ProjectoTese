@@ -62,7 +62,7 @@ cfg={"pre_processing":"",
      "expression": "1+"}
 
 matches=gt.ssts(s, cfg)
-print(matches)
+#print(matches)
 
 gt.plot_matches(s, matches, scatter=True)
 

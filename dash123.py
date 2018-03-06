@@ -268,7 +268,8 @@ def detect_peaks(x, mph=None, mpd=1, threshold=0, edge='rising',
 
 # Connotation Methods
 def AmpC(s, t, p='>'):
-    thr = ((np.max(s) - np.min(s)) * t) + np.min(s)
+
+    thr = (float(np.max(s) - np.min(s)) * t) + np.min(s)
     if (p == '<'):
         s1 = (s <= (thr)) * 1
     elif (p == '>'):
@@ -549,22 +550,50 @@ html.Div(
     dash.dependencies.Output('regexgraph', 'figure'),
     [dash.dependencies.Input('regex', 'value'),
      dash.dependencies.Input('SCtest', 'value'),
-     dash.dependencies.Input('searchregex', 'n_clicks')]
+     dash.dependencies.Input('searchregex', 'n_clicks'),
+     dash.dependencies.Input('timevar_graph_PP', 'figure')]
 )
-def RegexParser(regex, string, n_clicks):
+def RegexParser(regex, string, n_clicks, data):
     global lastclick2
 
     if (n_clicks != None):
         if(n_clicks>lastclick2):
             str=numpy.asarray(string)
             matches = []
-            for i in range(len(str)):
-                match=[]
+            traces=[]
+            for i in range(len(string)):
+                matchInitial=[]
+                matchFinal = []
                 regit = re.finditer(regex,string)
-                [match.append((int(i.span()[0]),
-                               int(i.span()[1]))) for i in regit]
-                matches.append(match)
-            return matches
+                for i in regit:
+                    matchInitial.append((int(i.span()[0])))
+                    matchFinal.append(int(i.span()[1]))
+                    # [match.append((int(i.span()[0]),
+                #                int(i.span()[1]))) for i in regit]
+                # print(data)
+
+            #TODO por os match Initial e final como numpy
+            datax = np.array(data['data'][0]['x'])
+            datay=np.array(data['data'][0]['y'])
+            print(data['data'][0]['x'])
+            print(data['data'][0]['y'])
+            traces.append(go.Scatter(
+                x=datax[matchInitial],
+                y=datay[matchInitial],
+                # text=selected_option[0],
+                opacity=0.7,
+                marker={
+                    'size': 10,
+                    'line': {'width': 0.5, 'color': 'white'}
+                },
+                name=i
+            ))
+            return {
+                'data': traces,
+                'layout': go.Layout(
+                    legend={'x': 0, 'y': 1},
+                    hovermode='closest'
+                )}
 
 
 
@@ -618,20 +647,19 @@ def SymbolicConnotationStringParser(n_clicks, parse, data):
             for i in range(len(CutString)-1):
                 if(CutString[i] =='A'):
                     #function Amp
-
-                    finalString.append(AmpC(data['data'][0]['y'],int(CutString[i+1])))
+                    finalString.append(AmpC(data['data'][0]['y'],float(CutString[i+1])))
 
                 elif(CutString[i] =='1D'):
                     #Function 1st Derivative
-                    finalString.append( DiffC(data['data'][0]['y'], int(CutString[i + 1])))
+                    finalString.append( DiffC(data['data'][0]['y'], float(CutString[i + 1])))
 
                 elif (CutString[i] == '2D'):
                     #Function 2nd Derivative
-                    finalString.append( Diff2C(data['data'][0]['y'], int(CutString[i + 1])))
+                    finalString.append( Diff2C(data['data'][0]['y'], float(CutString[i + 1])))
 
                 elif (CutString[i] == 'R'):
                     #Function RiseAmp
-                    finalString.append(RiseAmp(data['data'][0]['y'], int(CutString[i + 1])))
+                    finalString.append(RiseAmp(data['data'][0]['y'], float(CutString[i + 1])))
 
 
         lastclick1=n_clicks

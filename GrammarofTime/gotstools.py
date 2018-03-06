@@ -455,8 +455,8 @@ def ssts(s, cfg, report='clean', analysis='singular'):
     # Handles exception to multisignal approach.
     # print(s)
     s = np.asarray(s)
-    print(s.ndim)
-    print(len(s))
+    # print(s.ndim)
+    # print(len(s))
     if len(s) == 1:
         s = np.array([s])
     ns = np.copy(s)
@@ -508,6 +508,7 @@ def ssts(s, cfg, report='clean', analysis='singular'):
                     sys.exit('Unknown connotation symbol.')
                 else:
                     operator = val
+                    print(gots_func_dict["connotation"][operator])
                     for subval in sc_func_stack[j + 1:]:
                         if not isfloat(subval) and subval[0] != "[" and subval[-1] != "]":
                             break
@@ -535,7 +536,6 @@ def ssts(s, cfg, report='clean', analysis='singular'):
         constr = int2str(merged_sc_str[i])
         for i in range(len(ns)):
             match = []
-            print()
             regit = re.finditer(cfg["expression"], constr)
             [match.append((int(i.span()[0]),
                              int(i.span()[1]))) for i in regit]
@@ -587,7 +587,7 @@ def open_files():  # opens the file collection and creates de dataset to be used
     return dM
 
 def Velocity(data):
-    print(data)
+    # print(data)
     time_var, space_var = interpolate_data(data, t_abandon=20)
     return time_var['vt']
 
