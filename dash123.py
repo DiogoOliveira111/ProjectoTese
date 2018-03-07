@@ -21,6 +21,7 @@ prevb1= 0
 prevb2= 0
 prevb3= 0
 prevb4= 0
+prevb5=0
 
 lastclick=0
 lastclick1=0
@@ -354,6 +355,10 @@ def RiseAmp(Signal, t):
             # append peak position
             pks.append(val[i] + pk)
             # calculate rising amplitude
+            # val=np.array(val)
+            # pk=np.array(pk)
+            # risingH=np.array(risingH)
+            wind=np.array(wind)
             risingH[val[i]:val[i + 1]] = [wind[pk] - Signal[val[i]] for a in range(val[i], val[i + 1])]
             Rise = np.append(Rise, (wind[pk] - Signal[val[i]]) > thr)
 
@@ -450,10 +455,13 @@ html.Div(children= dcc.Graph(
                     x= MouseDict['x'],
                     mode= 'markers',
                     opacity=0.7,
-                    marker={
-                        'size':7,
-                        'line':{'width' : 0.5 , 'color': 'white'}
-                    }
+                    marker=dict(
+                        size=10,
+                        color='white',
+                        line=dict(
+                            width=2)
+
+                     )
                 )
 
             ],
@@ -467,6 +475,14 @@ html.Div(children= dcc.Graph(
         }
 
     )),
+html.Div(
+dcc.Slider( id='slider',
+    min=0,
+    max=len(time_var['ttv']),
+    step=1,
+    value=0,
+)),
+
 html.Div(
     dcc.RadioItems(id='Radioheatmap',
        options=[
@@ -489,7 +505,7 @@ html.Div(
            {'label': 'Y Position in t', 'value': 'yt'},
            {'label' : 'Velocity', 'value': 'vt'},
             {'label' : 'Acceleration', 'value': 'a'}
-       ], value='a'
+       ], value='vt'
 
     ),
     html.Button('Interpolate', id='interpolate'),
@@ -498,10 +514,11 @@ html.Div(
 
 ]),
     html.Div([
-        html.Button('HighPass(H)', id='highpass', value=''),
-        html.Button('LowPass(L)', id='lowpass'),
-        html.Button('BandPass(Bp)', id='bandpass'),
-        html.Button('Smooth(S)', id='smooth')]
+        html.Button('HighPass (H)', id='highpass', value=''),
+        html.Button('LowPass (L)', id='lowpass'),
+        html.Button('BandPass (Bp)', id='bandpass'),
+        html.Button('Smooth (S)', id='smooth'),
+        html.Button('Module (Abs)', id='absolute')]
 ),
     html.Div(dcc.Input(id='PreProcessing',
     placeholder='Enter a value...',
@@ -572,21 +589,60 @@ def RegexParser(regex, string, n_clicks, data):
                 #                int(i.span()[1]))) for i in regit]
                 # print(data)
 
-            #TODO por os match Initial e final como numpy
+            matchInitial=np.array(matchInitial)
+            matchFinal=np.array(matchFinal)
             datax = np.array(data['data'][0]['x'])
             datay=np.array(data['data'][0]['y'])
-            print(data['data'][0]['x'])
-            print(data['data'][0]['y'])
-            traces.append(go.Scatter(
+            print(datax[matchInitial])
+            print(datay[matchInitial])
+
+            traces.append(go.Scatter( #match initial append
                 x=datax[matchInitial],
                 y=datay[matchInitial],
                 # text=selected_option[0],
+                mode='markers',
                 opacity=0.7,
-                marker={
-                    'size': 10,
-                    'line': {'width': 0.5, 'color': 'white'}
-                },
-                name=i
+                marker=dict(
+                    size=10,
+                    color='green',
+                    line=dict(
+                        width=2)
+
+                ),
+                name='Match Initial'
+                # opacity=1,
+                #
+                # marker={
+                #     'size': 10,
+                #     'line': {'width': 0.5, 'color': 'white'}
+                # },
+
+            ))
+            traces.append(go.Scatter( #match final append
+                x=datax[matchFinal],
+                y=datay[matchFinal],
+                # text=selected_option[0],
+                mode='markers',
+                opacity=0.7,
+                marker=dict(
+                    size=10,
+                    color='red',
+                    line=dict(
+                        width=2)
+
+                ),
+                name='Match Final'
+            ))
+            traces.append(go.Scatter(
+                x=data['data'][0]['x'],
+                y=data['data'][0]['y'],
+                mode='lines',
+                line=dict(
+                    color='black',
+                    width=1
+
+                ),
+                name='Signal'
             ))
             return {
                 'data': traces,
@@ -659,10 +715,11 @@ def SymbolicConnotationStringParser(n_clicks, parse, data):
 
                 elif (CutString[i] == 'R'):
                     #Function RiseAmp
-                    finalString.append(RiseAmp(data['data'][0]['y'], float(CutString[i + 1])))
+                    finalString.append(RiseAmp(data['data'][0]['y'], float(CutString[i + 1]))) #nao sei se esta a fazer bem
 
 
         lastclick1=n_clicks
+        print(finalString)
         finalString=merge_chars(np.array(finalString))  # esta a dar um erro estranho quando escrevo a caixa
         return finalString
 
@@ -679,16 +736,16 @@ def PreProcessStringParser(n_clicks, parse, data):
     if (n_clicks != None):
         if(n_clicks>lastclick): # para fazer com que o graf so se altere quando clicamos no botao e nao devido aos outros callbacks-grafico ou input box
             CutString=parse.split()
-            for i in range(len(CutString)-1):
+            for i in range(len(CutString)): #estava range(len(CutString)-1 for some reason antes
                 if(CutString[i] =='H'):
-                    #function Amplitude
+                    #Function Amplitude
                     data['data'][0]['y']=highpass(data['data'][0]['y'],int(CutString[i+1])) #aplicar o filtro aos dados y
 
                 elif(CutString[i] =='L'):
                     #Function Low Pass
                     data['data'][0]['y']=lowpass(data['data'][0]['y'], int(CutString[i+1]))
 
-                elif (CutString[i] == 'BD'):
+                elif (CutString[i] == 'BP'):
                     #Function Band Pass
                     # print(CutString[i+1])
                     # print(CutString[i + 2])
@@ -698,6 +755,12 @@ def PreProcessStringParser(n_clicks, parse, data):
                     #Function Smooth
                     smooth_signal = smooth(np.array(data['data'][0]['y'])), int(CutString[i+1]) #estranho porque o smooth retorna uma lista com os dados na 1ªpos e o valor do smooth na segunda
                     data['data'][0]['y']=smooth_signal[0]
+
+                elif (CutString[i] == 'ABS'):
+                    #Function Absolute
+                    print('uin')
+                    data['data'][0]['y']=np.absolute(data['data'][0]['y'])
+
 
 
 
@@ -709,7 +772,8 @@ def PreProcessStringParser(n_clicks, parse, data):
     dash.dependencies.Input('highpass', 'n_clicks'),
     dash.dependencies.Input('lowpass', 'n_clicks'),
     dash.dependencies.Input('bandpass', 'n_clicks'),
-    dash.dependencies.Input('smooth', 'n_clicks')],
+    dash.dependencies.Input('smooth', 'n_clicks'),
+    dash.dependencies.Input('absolute', 'n_clicks')],
     [dash.dependencies.State('PreProcessing', 'value')]
     # prev_inputs=[
     #         dash.dependencies.PrevInput('button-1', 'n_clicks'),
@@ -720,8 +784,8 @@ def PreProcessStringParser(n_clicks, parse, data):
 
 
 
-def PreProcessingWrite(b1,b2,b3,b4, finalStr):
-    global  prevb1, prevb2, prevb3, prevb4 #banhada com variaveis globais para funcionar, convem mudar
+def PreProcessingWrite(b1,b2,b3,b4,b5, finalStr):
+    global  prevb1, prevb2, prevb3, prevb4, prevb5 #banhada com variaveis globais para funcionar, convem mudar
     if(b1!= None): # tem o problema de nao limpar, se calhar precisa de um botao para limpar
         if(b1>prevb1):
             finalStr+= 'H '
@@ -734,7 +798,7 @@ def PreProcessingWrite(b1,b2,b3,b4, finalStr):
 
     if (b3 != None):
         if (b3 >prevb3):
-            finalStr += "BD "
+            finalStr += "BP "
         prevb3 = b3
 
     if (b4 != None):
@@ -742,17 +806,23 @@ def PreProcessingWrite(b1,b2,b3,b4, finalStr):
             finalStr +="S "
         prevb4 = b4
 
+    if (b5 != None):
+        if (b5 >prevb5):
+            finalStr +="ABS "
+        prevb5 = b5
+
     return finalStr
 
 
 @app.callback(
     dash.dependencies.Output('timevar_graph', 'figure'),
-    [dash.dependencies.Input('Radio', 'value')])
-def update_figure(selected_option):
+    [dash.dependencies.Input('Radio', 'value'),
+     dash.dependencies.Input('slider','value')])
+def update_figure(selected_option, value):
+    # value=int(value)
+    print(time_var['ttv'][value])
+    print(time_var[str(selected_option)][value])
 
-    #print(len(time_var['jerk']))
-    #print(len(time_var['xt']))
-    #filtered_df = dM[selected_option]
     if(str(selected_option) in ("vt, vx, vy")):
         traces=[]
         traces.append(go.Scatter(
@@ -781,8 +851,18 @@ def update_figure(selected_option):
             line={'width': 2, 'color': 'black'},
             name=i
         ))
+
+    traces.append(go.Scatter(
+        x=[time_var['ttv'][value]],
+        y=[time_var[str(selected_option)][value]],
+        mode='markers'))
+
+
+        # print(len(time_var['jerk']))
+        # print(len(time_var['xt']))
+        # filtered_df = dM[selected_option]
     return {
-        'data': traces,
+        'data':traces,
         'layout': go.Layout(
             xaxis={'title': 'Time'},
             yaxis={'title': selected_option},
