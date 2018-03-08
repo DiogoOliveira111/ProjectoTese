@@ -425,7 +425,9 @@ MouseDict = dict(t=MouseTime, x=MouseX, y=MouseY)
 dM = pd.DataFrame.from_dict(MouseDict)
 time_var,space_var=interpolate_data(dM,t_abandon=20)
 vars={'time_var': time_var, 'space_var': space_var}
+
 app = dash.Dash()
+# app.scripts.config.serve_locally = True #no idea what this does
 
 colors = {
     'background': '#ffffff',
@@ -445,27 +447,48 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
         'textAlign': 'center',
         'color': colors['text']
     }),
-
+html.Div([
+    dcc.Tabs(
+        tabs=[
+            {'label': 'Mouse Movement', 'value': 'XY'},
+            {'label': 'Pre-Processing', 'value': 'PP'},
+            {'label': 'Symbolic Connotation', 'value': 'SC'},
+            {'label': 'Search', 'value': 'S'}
+        ],
+        value='XY',
+        id='tabs'
+    ),
+    html.Div(id='tab-output')
+], style={
+    'width': '80%',
+    'fontFamily': 'Sans-Serif',
+    'margin-left': 'auto',
+    'margin-right': 'auto'
+}),
 html.Div(children= dcc.Graph(
         id='PosGraf',
+        style={'display': 'none' #inline-block
+        },
         figure={
             'data': [
                 go.Scatter(
                     y = MouseDict['y'],
                     x= MouseDict['x'],
                     mode= 'markers',
+                    name='Position',
                     opacity=0.7,
                     marker=dict(
-                        size=10,
+                        size=5,
                         color='white',
                         line=dict(
-                            width=2)
+                            width=1)
 
                      )
                 )
 
             ],
             'layout': go.Layout(
+                showlegend=True,
                 xaxis={ 'title': 'X position'},
                 yaxis={'title': 'y position'},
                 margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
@@ -475,16 +498,24 @@ html.Div(children= dcc.Graph(
         }
 
     )),
-html.Div(
+html.Div([
+html.Button('Interpolate', id='interpolate',
+            style={'display': 'none'  # para nao mostrar, so com o tab certo
+                   }
+),
 dcc.Slider( id='slider',
+            # style={'display': 'none'  # para nao mostrar, so com o tab certo
+            #        },
     min=0,
     max=len(time_var['ttv']),
     step=1,
     value=0,
-)),
+)]),
 
 html.Div(
     dcc.RadioItems(id='Radioheatmap',
+                    style={'display': 'none'  # para nao mostrar, so com o tab certo
+                   },
        options=[
            {'label': 'Positional Map', 'value': 'xy'},
            {'label': 'Heatmap', 'value': 'heat'},
@@ -494,9 +525,13 @@ html.Div(
 
 
     html.Div([
-    dcc.Graph(id='timevar_graph'),
+    dcc.Graph(id='timevar_graph',
+              style={'display': 'none'  # inline-block
+                     }),
     dcc.RadioItems(
         id='Radio',
+        style={'display': 'none'},
+
        options=[
            {'label': 'Velocity in X', 'value': 'vx'},
            {'label': 'Velocity in Y', 'value': 'vy'},
@@ -508,46 +543,48 @@ html.Div(
        ], value='vt'
 
     ),
-    html.Button('Interpolate', id='interpolate'),
-    html.Div(id='output_spacevar'),
+
+    html.Div(id='output_spacevar'), #falta esconder
              dcc.Markdown(id='text_spacevar')
 
 ]),
     html.Div([
-        html.Button('HighPass (H)', id='highpass', value=''),
-        html.Button('LowPass (L)', id='lowpass'),
-        html.Button('BandPass (Bp)', id='bandpass'),
-        html.Button('Smooth (S)', id='smooth'),
-        html.Button('Module (Abs)', id='absolute')]
+        html.Button('HighPass (H)', id='highpass', value='', style={'display': 'none'}),
+        html.Button('LowPass (L)', id='lowpass', style={'display': 'none'}),
+        html.Button('BandPass (Bp)', id='bandpass', style={'display': 'none'}),
+        html.Button('Smooth (S)', id='smooth', style={'display': 'none'}),
+        html.Button('Module (Abs)', id='absolute', style={'display': 'none'})]
 ),
     html.Div(dcc.Input(id='PreProcessing',
-    placeholder='Enter a value...',
+    placeholder='Ex: "H 50 L 10"',
     type='text',
-    value=''
+    value='',
+    style={'display': 'none'}
 )),
     html.Div([
-        html.Button('Pre-Processing', id='preprocess'),
-        dcc.Graph(id='timevar_graph_PP')
+        html.Button('Pre-Processing', id='preprocess', style={'display': 'none'}),
+        dcc.Graph(id='timevar_graph_PP', style={'display': 'none'})
     ]),
 
     html.Div([
-        html.Button('Amplitude (A)', id='Amp', value=''),
-        html.Button('1st Derivative (D)', id='diff1'),
-        html.Button('2nd Derivative (C)', id='diff2'),
-        html.Button('RiseAmp (R)', id='riseamp')]
+        html.Button('Amplitude (A)', id='Amp', value='', style={'display': 'none'}),
+        html.Button('1st Derivative (D)', id='diff1', style={'display': 'none'}),
+        html.Button('2nd Derivative (C)', id='diff2', style={'display': 'none'}),
+        html.Button('RiseAmp (R)', id='riseamp', style={'display': 'none'})]
 ),
     html.Div(dcc.Input(id='SCtext',
     placeholder='Enter a value...',
     type='text',
-    value=''
+    value='',
+    style={'display': 'none'}
 )),
     html.Div([
-        html.Button('Symbolic Connotation', id='SCbutton'),
+        html.Button('Symbolic Connotation', id='SCbutton',style={'display': 'none'} ),
     dcc.Textarea(
         id="SCtest",
         placeholder='Enter a value...',
         value='This is a TextArea component',
-        style={'width': '100%'}
+        style={'display': 'none'}
     )
     ]),
 
@@ -555,13 +592,131 @@ html.Div(
         dcc.Input(id='regex',
         placeholder='Enter Regular Expression...',
         type='text',
-        value=''),
-        html.Button('Search Regex', id='searchregex'),
-        dcc.Graph(id='regexgraph')
+        value='',
+        style={'display': 'none'}),
+        html.Button('Search Regex', id='searchregex', style={'display': 'none'}),
+        dcc.Graph(id='regexgraph', style={'display': 'none'})
     ])
 
 
 ])
+
+@app.callback(
+    dash.dependencies.Output('tab-output', 'children'),
+    [dash.dependencies.Input('tabs', 'value')])
+def display_content(value):
+    if value=='XY':
+        return html.Div([
+            dcc.Graph(
+                id='PosGraf',
+                figure={
+                           'data': [
+                               go.Scatter(
+                                   y=MouseDict['y'],
+                                   x=MouseDict['x'],
+                                   mode='markers',
+                                   name='Position',
+                                   opacity=0.7,
+                                   marker=dict(
+                                       size=5,
+                                       color='white',
+                                       line=dict(
+                                           width=1)
+
+                                   )
+                               )
+
+                           ],
+                           'layout': go.Layout(
+                               showlegend=True,
+                               xaxis={'title': 'X position'},
+                               yaxis={'title': 'y position'},
+                               margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
+                               legend={'x': 0, 'y': 1},
+                               hovermode='closest')
+
+                       }),
+            html.Button('Interpolate', id='interpolate'),
+
+                dcc.RadioItems(id='Radioheatmap',
+                               options=[
+                                   {'label': 'Positional Map', 'value': 'xy'},
+                                   {'label': 'Heatmap', 'value': 'heat'},
+                               ], value='xy'
+
+                               ),
+                ])
+    if value=='PP':
+        return html.Div([
+                dcc.Graph(id='timevar_graph'),
+
+                dcc.RadioItems(
+                    id='Radio',
+                   options=[
+                       {'label': 'Velocity in X', 'value': 'vx'},
+                       {'label': 'Velocity in Y', 'value': 'vy'},
+                       {'label': 'Jerk', 'value': 'jerk'},
+                       {'label': 'X position in t', 'value': 'xt'},
+                       {'label': 'Y Position in t', 'value': 'yt'},
+                       {'label' : 'Velocity', 'value': 'vt'},
+                        {'label' : 'Acceleration', 'value': 'a'}
+                   ], value='vt'
+
+                ),
+
+                html.Div(id='output_spacevar'),
+                dcc.Markdown(id='text_spacevar')  ,
+            html.Div([
+                html.Button('HighPass (H)', id='highpass', value='' ),
+                html.Button('LowPass (L)', id='lowpass'),
+                html.Button('BandPass (Bp)', id='bandpass'),
+                html.Button('Smooth (S)', id='smooth'),
+                html.Button('Module (Abs)', id='absolute')]
+            ),
+            html.Div(dcc.Input(id='PreProcessing',
+                               placeholder='Ex: "H 50 L 10"',
+                               type='text',
+                               value='',
+                               )),
+            html.Div([
+                html.Button('Pre-Processing', id='preprocess'),
+                dcc.Graph(id='timevar_graph_PP')
+            ])
+        ])
+    if value=='SC':
+        return html.Div([dcc.Graph(id='timevar_graph_PP'),
+                         html.Div([
+                             html.Button('Amplitude (A)', id='Amp', value=''),
+                             html.Button('1st Derivative (D)', id='diff1'),
+                             html.Button('2nd Derivative (C)', id='diff2'),
+                             html.Button('RiseAmp (R)', id='riseamp')]
+                         ),
+                         html.Div(dcc.Input(id='SCtext',
+                                            placeholder='Enter a value...',
+                                            type='text',
+                                            value='',
+                                            )),
+                         html.Div(
+                             html.Button('Symbolic Connotation', id='SCbutton')),
+                         html.Div(
+                             dcc.Textarea(
+                                 id="SCtest",
+                                 placeholder='Enter a value...',
+                                 value='Your Symbolic Time Series will appear here',
+                                 style={'width': '100%'})
+                                 )
+
+                         ])
+    if value=='S':
+        return html.Div([
+                dcc.Input(id='regex',
+                          placeholder='Enter Regular Expression...',
+                          type='text',
+                          value=''),
+                html.Button('Search Regex', id='searchregex'),
+                dcc.Graph(id='regexgraph')
+            ])
+
 
 @app.callback(
     dash.dependencies.Output('regexgraph', 'figure'),
@@ -572,7 +727,6 @@ html.Div(
 )
 def RegexParser(regex, string, n_clicks, data):
     global lastclick2
-
     if (n_clicks != None):
         if(n_clicks>lastclick2):
             str=numpy.asarray(string)
@@ -593,8 +747,8 @@ def RegexParser(regex, string, n_clicks, data):
             matchFinal=np.array(matchFinal)
             datax = np.array(data['data'][0]['x'])
             datay=np.array(data['data'][0]['y'])
-            print(datax[matchInitial])
-            print(datay[matchInitial])
+            # print(datax[matchInitial])
+            # print(datay[matchInitial])
 
             traces.append(go.Scatter( #match initial append
                 x=datax[matchInitial],
@@ -648,7 +802,8 @@ def RegexParser(regex, string, n_clicks, data):
                 'data': traces,
                 'layout': go.Layout(
                     legend={'x': 0, 'y': 1},
-                    hovermode='closest'
+                    hovermode='closest',
+
                 )}
 
 
@@ -684,8 +839,7 @@ def SymbolicConnotationWrite(a1,a2,a3,a4, finalStr):
         if (a4 >preva4):
             finalStr +="R "
         preva4 = a4
-
-    return finalStr
+    return str(finalStr)
 
 @app.callback(
     dash.dependencies.Output('SCtest', 'value'),
@@ -747,8 +901,6 @@ def PreProcessStringParser(n_clicks, parse, data):
 
                 elif (CutString[i] == 'BP'):
                     #Function Band Pass
-                    # print(CutString[i+1])
-                    # print(CutString[i + 2])
                     data['data'][0]['y']=bandpass(data['data'][0]['y'], int(CutString[i+1]), int(CutString[i+2]))
 
                 elif (CutString[i] == 'S'):
@@ -758,7 +910,6 @@ def PreProcessStringParser(n_clicks, parse, data):
 
                 elif (CutString[i] == 'ABS'):
                     #Function Absolute
-                    print('uin')
                     data['data'][0]['y']=np.absolute(data['data'][0]['y'])
 
 
@@ -787,8 +938,9 @@ def PreProcessStringParser(n_clicks, parse, data):
 def PreProcessingWrite(b1,b2,b3,b4,b5, finalStr):
     global  prevb1, prevb2, prevb3, prevb4, prevb5 #banhada com variaveis globais para funcionar, convem mudar
     if(b1!= None): # tem o problema de nao limpar, se calhar precisa de um botao para limpar
-        if(b1>prevb1):
+        if(b1>prevb1): #o upgrade/downgrade fez com que isto ficasse a 1 cada vez que e clicado
             finalStr+= 'H '
+
         prevb1 = b1
 
     if (b2 != None):
@@ -810,8 +962,7 @@ def PreProcessingWrite(b1,b2,b3,b4,b5, finalStr):
         if (b5 >prevb5):
             finalStr +="ABS "
         prevb5 = b5
-
-    return finalStr
+    return str(finalStr)
 
 
 @app.callback(
@@ -820,8 +971,6 @@ def PreProcessingWrite(b1,b2,b3,b4,b5, finalStr):
      dash.dependencies.Input('slider','value')])
 def update_figure(selected_option, value):
     # value=int(value)
-    print(time_var['ttv'][value])
-    print(time_var[str(selected_option)][value])
 
     if(str(selected_option) in ("vt, vx, vy")):
         traces=[]
@@ -835,7 +984,7 @@ def update_figure(selected_option, value):
                 #     'line': {'width': 0.5, 'color': 'white'}
                 # },
                 line= {'width': 2, 'color': 'black'},
-                name=i
+                name=str(selected_option)
             ))
     elif(str(selected_option) in ("xt, yt, a, jerk")):
         traces = []
@@ -869,6 +1018,7 @@ def update_figure(selected_option, value):
             legend={'x': 0, 'y': 1},
             hovermode='closest'
         )
+
     }
 
 @app.callback(
@@ -879,6 +1029,35 @@ def interpolate_graf(n_clicks, value):
     if(value=='xy'):
         # if(n_clicks == None):
         #     pass
+        if(n_clicks==None):
+            traces = []
+            traces.append(go.Scatter(
+                y=MouseDict['y'],
+                x=MouseDict['x'],
+                name='Position',
+                mode='markers',
+                opacity=0.7,
+                marker=dict(
+                    size=5,
+                    color='white',
+                    line=dict(
+                        width=1)
+                )
+
+            ))
+
+            return {
+                'data': traces,
+                'layout': go.Layout(
+                    showlegend=True,
+                    autosize=True,
+                    xaxis={'title': 'X position'},
+                    yaxis={'title': 'Y position'},
+                    legend={'x': 'X', 'y': 'Y'},
+                    hovermode='closest'
+                )
+            }
+
         if (n_clicks!=None): #1ª vez n_clicks== None
             traces = []
             traces.append(go.Scatter(
@@ -891,12 +1070,14 @@ def interpolate_graf(n_clicks, value):
                 #     'line': {'width': 0.5, 'color': 'white'}
                 # },
                 line={'width': 2, 'color': 'black'},
-                name=i
+                name="Interpolated Position"
             ))
 
             return {
                 'data': traces,
                 'layout': go.Layout(
+                    showlegend=True,
+                    autosize=True,
                     xaxis={'title': 'X position Interpolated'},
                     yaxis={'title': 'Y position Interpolated'},
                     legend={'x': 0, 'y': 1},
@@ -910,18 +1091,26 @@ def interpolate_graf(n_clicks, value):
         # traces=[
 
         trace1 = go.Scatter(
-            x=x, y=y, mode='markers', name='points',
+            x=x,
+            y=y,
+            mode='markers',
+            name='Point Position',
             marker=dict(color='rgb(102,0,0)', size=5, opacity=0.4)
         )
         trace2 = go.Histogram2dcontour(
-            x=x, y=y, name='density', ncontours=20,
-            colorscale='Hot', reversescale=True, showscale=False
+            x=x,
+            y=y,
+            name='Position Density',
+            ncontours=20,
+            colorscale='Hot',
+            reversescale=True,
+            showscale=False
         )
 
         data = [trace1, trace2]
 
         layout = go.Layout(
-            showlegend=False,
+            showlegend=True,
             autosize=True,
             # width=600,
             # height=550,
