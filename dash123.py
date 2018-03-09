@@ -428,6 +428,7 @@ vars={'time_var': time_var, 'space_var': space_var}
 
 app = dash.Dash()
 # app.scripts.config.serve_locally = True #no idea what this does
+# app.config.supress_callback_exceptions=True
 
 colors = {
     'background': '#ffffff',
@@ -522,6 +523,11 @@ html.Div(
        ], value='xy'
 
     )),
+# dcc.Slider(id='sliderpos',
+#                        min=0,
+#                        max=len(MouseDict['x']),
+#                        step=1,
+#                        value=0,),
 
 
     html.Div([
@@ -645,6 +651,11 @@ def display_content(value):
                                ], value='xy'
 
                                ),
+            # dcc.Slider(id='sliderpos',
+            #            min=0,
+            #            max=len(MouseDict['x']),
+            #            step=1,
+            #            value=0,)
                 ])
     if value=='PP':
         return html.Div([
@@ -940,9 +951,9 @@ def PreProcessingWrite(b1,b2,b3,b4,b5, finalStr):
     if(b1!= None): # tem o problema de nao limpar, se calhar precisa de um botao para limpar
         if(b1>prevb1): #o upgrade/downgrade fez com que isto ficasse a 1 cada vez que e clicado
             finalStr+= 'H '
-
         prevb1 = b1
-
+    print(b1)
+    print(prevb1)
     if (b2 != None):
         if (b2 >prevb2):
             finalStr += 'L '
@@ -1024,9 +1035,12 @@ def update_figure(selected_option, value):
 @app.callback(
     dash.dependencies.Output('PosGraf', 'figure'),
     [dash.dependencies.Input('interpolate', 'n_clicks'),
-     dash.dependencies.Input('Radioheatmap', 'value')])
+     dash.dependencies.Input('Radioheatmap', 'value'),
+     # dash.dependencies.Input('sliderpos', 'value')
+     ])
 def interpolate_graf(n_clicks, value):
     if(value=='xy'):
+
         # if(n_clicks == None):
         #     pass
         if(n_clicks==None):
@@ -1045,7 +1059,12 @@ def interpolate_graf(n_clicks, value):
                 )
 
             ))
-
+            # MouseDict['x']=np.array(MouseDict['x'])
+            # MouseDict['y']=np.array(MouseDict['y'])
+            # traces.append(go.Scatter( #para por um slider que mostrava a evoluçao dos pontos no 1º graf
+            #     x=[MouseDict['x'][slider]],
+            #     y=[MouseDict['y'][slider]],
+            #     mode='markers'))
             return {
                 'data': traces,
                 'layout': go.Layout(
