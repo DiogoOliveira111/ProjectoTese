@@ -394,7 +394,6 @@ flag=0
 MouseTime=[]
 MouseX=[]
 MouseY=[]
-
 for i in collection:
 
     event=collection[i]
@@ -428,7 +427,6 @@ time_var,space_var=interpolate_data(dM,t_abandon=20)
 vars={'time_var': time_var, 'space_var': space_var}
 
 app = dash.Dash()
-app.config.supress_callback_exceptions=True
 # app.scripts.config.serve_locally = True #no idea what this does
 # app.config.supress_callback_exceptions=True
 
@@ -436,63 +434,6 @@ colors = {
     'background': '#ffffff',
     'text': '#7FDBFF'
 }
-Div_XY= html.Div([
-            dcc.Graph(
-                id='PosGraf',
-                figure={
-                           'data': [
-                               go.Scatter(
-                                   y=MouseDict['y'],
-                                   x=MouseDict['x'],
-                                   mode='markers',
-                                   name='Position',
-                                   opacity=0.7,
-                                   marker=dict(
-                                       size=5,
-                                       color='white',
-                                       line=dict(
-                                           width=1)
-
-                                   )
-                               )
-
-                           ],
-                           'layout': go.Layout(
-                               showlegend=True,
-                               xaxis={'title': 'X position'},
-                               yaxis={'title': 'y position'},
-                               margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
-                               legend={'x': 0, 'y': 1},
-                               hovermode='closest')
-
-                       }),
-            html.Button('Interpolate', id='interpolate'),
-
-                dcc.RadioItems(id='Radioheatmap',
-                               options=[
-                                   {'label': 'Positional Map', 'value': 'xy'},
-                                   {'label': 'Heatmap', 'value': 'heat'},
-                               ], value='xy'),
-            # dcc.Slider(id='sliderpos',
-            #            min=0,
-            #            max=len(MouseDict['x']),
-            #            step=1,
-            #            value=0,)
-                ])
-
-Div_PP = html.Div([
-                html.Div(id='output_spacevar'),
-                dcc.Markdown(id='text_spacevar'),
-                dcc.Graph(id='timevar_graph_PP')
-        ])
-Div_SC = html.Div([dcc.Graph(id='timevar_graph_PP')
-                ])
-
-Div_S = html.Div([
-                dcc.Graph(id='regexgraph')
-            ])
-
-
 
 app.layout = html.Div(style={'backgroundColor': colors['background']}, children=[
     html.H1(
@@ -503,240 +444,168 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
         }
     ),
 
-    html.Div(children='Dash: A web application framework for Python.'),
+    html.Div(children='Dash: A web application framework for Python.', style={
+        'textAlign': 'center',
+        'color': colors['text']
+    }),
+html.Div([
+    dcc.Tabs(
+        tabs=[
+            {'label': 'Mouse Movement', 'value': 'XY'},
+            {'label': 'Pre-Processing', 'value': 'PP'},
+            {'label': 'Symbolic Connotation', 'value': 'SC'},
+            {'label': 'Search', 'value': 'S'}
+        ],
+        value='XY',
+        id='tabs'
+    ),
+    html.Div(id='tab-output')
+], style={
+    'width': '80%',
+    'fontFamily': 'Sans-Serif',
+    'margin-left': 'auto',
+    'margin-right': 'auto'
+}),
+html.Div(children= dcc.Graph(
+        id='PosGraf',
+        style={'display': 'none' #inline-block
+        },
+        figure={
+            'data': [
+                go.Scatter(
+                    y = MouseDict['y'],
+                    x= MouseDict['x'],
+                    mode= 'markers',
+                    name='Position',
+                    opacity=0.7,
+                    marker=dict(
+                        size=5,
+                        color='white',
+                        line=dict(
+                            width=1)
 
-    html.Div(
-        children= [
+                     )
+                )
 
-            html.Div(
-                [html.Div(children=[
-                    dcc.Tabs(
-                        tabs=[
-                            {'label': 'Mouse Movement', 'value': 'XY'},
-                            {'label': 'Pre-Processing', 'value': 'PP'},
-                            {'label': 'Symbolic Connotation', 'value': 'SC'},
-                            {'label': 'Search', 'value': 'S'}
-                        ],
+            ],
+            'layout': go.Layout(
+                showlegend=True,
+                xaxis={ 'title': 'X position'},
+                yaxis={'title': 'y position'},
+                margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
+                legend={'x': 0, 'y': 1},
+                hovermode='closest')
 
-                        value='XY',
-                        id='tabs'
-                    ),
-                    html.Div(id='tab-output')])],
-                style={'float':'left',
-                       'width':'70%'}),
+        }
 
-            html.Div(children=[
-                html.Div([
-                    html.Button('HighPass (H)', id='highpass', value=''),
-                    html.Button('LowPass (L)', id='lowpass'),
-                    html.Button('BandPass (Bp)', id='bandpass'),
-                    html.Button('Smooth (S)', id='smooth'),
-                    html.Button('Module (Abs)', id='absolute')]
-                ),
-                html.Div(
-                    dcc.Input(id='PreProcessing',
-                               placeholder='Ex: "H 50 L 10"',
-                               type='text',
-                               value='')
-                ),
-                html.Div(
-                    html.Button('Pre-Processing', id='preprocess')),
-                html.Div([
-                    html.Button('Amplitude (A)', id='Amp', value=''),
-                    html.Button('1st Derivative (D)', id='diff1'),
-                    html.Button('2nd Derivative (C)', id='diff2'),
-                    html.Button('RiseAmp (R)', id='riseamp')]
-                ),
-                html.Div(dcc.Input(id='SCtext',
-                    placeholder='Enter a value...',
-                    type='text',
-                    value='',
-                    # style={'display': 'none'}
-                )),
-                html.Div(
-                    html.Button('Symbolic Connotation', id='SCbutton')),
-                html.Div(
-                    dcc.Textarea(
-                    id="SCtest",
-                    placeholder='Enter a value...',
-                    value='',)
-                ),
-                html.Div([
-                        dcc.Input(id='regex',
-                        placeholder='Enter Regular Expression...',
-                        type='text',
-                        value='',
-                        # style={'display': 'none'}
-                  ),
-                html.Button('Search Regex', id='searchregex')
-                        ],
-                        style={
-                            'width': '25%',
-                            'fontFamily': 'Sans-Serif',
-                            'float' : 'left'})]),
+    )),
+html.Div([
+html.Button('Interpolate', id='interpolate',
+            style={'display': 'none'  # para nao mostrar, so com o tab certo
+                   }
+),
+dcc.Slider( id='slider',
+            # style={'display': 'none'  # para nao mostrar, so com o tab certo
+            #        },
+    min=0,
+    max=len(time_var['ttv']),
+    step=1,
+    value=0,
+)]),
+
+html.Div(
+    dcc.RadioItems(id='Radioheatmap',
+                    style={'display': 'none'  # para nao mostrar, so com o tab certo
+                   },
+       options=[
+           {'label': 'Positional Map', 'value': 'xy'},
+           {'label': 'Heatmap', 'value': 'heat'},
+       ], value='xy'
+
+    )),
+# dcc.Slider(id='sliderpos',
+#                        min=0,
+#                        max=len(MouseDict['x']),
+#                        step=1,
+#                        value=0,),
 
 
+    html.Div([
+    dcc.Graph(id='timevar_graph',
+              style={'display': 'none'  # inline-block
+                     }),
+    dcc.RadioItems(
+        id='Radio',
+        style={'display': 'none'},
 
+       options=[
+           {'label': 'Velocity in X', 'value': 'vx'},
+           {'label': 'Velocity in Y', 'value': 'vy'},
+           {'label': 'Jerk', 'value': 'jerk'},
+           {'label': 'X position in t', 'value': 'xt'},
+           {'label': 'Y Position in t', 'value': 'yt'},
+           {'label' : 'Velocity', 'value': 'vt'},
+            {'label' : 'Acceleration', 'value': 'a'}
+       ], value='vt'
 
+    ),
 
+    html.Div(id='output_spacevar'), #falta esconder
+             dcc.Markdown(id='text_spacevar')
 
-
+]),
+    html.Div([
+        html.Button('HighPass (H)', id='highpass', value='', style={'display': 'none'}),
+        html.Button('LowPass (L)', id='lowpass', style={'display': 'none'}),
+        html.Button('BandPass (Bp)', id='bandpass', style={'display': 'none'}),
+        html.Button('Smooth (S)', id='smooth', style={'display': 'none'}),
+        html.Button('Module (Abs)', id='absolute', style={'display': 'none'})]
+),
+    html.Div(dcc.Input(id='PreProcessing',
+    placeholder='Ex: "H 50 L 10"',
+    type='text',
+    value='',
+    style={'display': 'none'}
+)),
+    html.Div([
+        html.Button('Pre-Processing', id='preprocess', style={'display': 'none'}),
+        dcc.Graph(id='timevar_graph_PP', style={'display': 'none'})
     ]),
-    # html.Div([
-    #         dcc.Graph(id='timevar_graph',
-    #                   ),
-    #         dcc.RadioItems(
-    #             id='Radio',
-    #
-    #            options=[
-    #                {'label': 'Velocity in X', 'value': 'vx'},
-    #                {'label': 'Velocity in Y', 'value': 'vy'},
-    #                {'label': 'Jerk', 'value': 'jerk'},
-    #                {'label': 'X position in t', 'value': 'xt'},
-    #                {'label': 'Y Position in t', 'value': 'yt'},
-    #                {'label' : 'Velocity', 'value': 'vt'},
-    #                 {'label' : 'Acceleration', 'value': 'a'}
-    #            ], value='vt'
-    #         )]),
 
-    #     dcc.Graph(
-    #     id='PosGraf',
-    #     style={'display': 'none' #inline-block
-    #     },
-    #     figure={
-    #         'data': [
-    #             go.Scatter(
-    #                 y = MouseDict['y'],
-    #                 x= MouseDict['x'],
-    #                 mode= 'markers',
-    #                 name='Position',
-    #                 opacity=0.7,
-    #                 marker=dict(
-    #                     size=5,
-    #                     color='white',
-    #                     line=dict(
-    #                         width=1)
-    #
-    #                  )
-    #             )
-    #
-    #         ],
-    #         'layout': go.Layout(
-    #             showlegend=True,
-    #             xaxis={ 'title': 'X position'},
-    #             yaxis={'title': 'y position'},
-    #             margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
-    #             legend={'x': 0, 'y': 1},
-    #             hovermode='closest')
-    #
-    #     }
-    #
-    # ),
-# html.Div([
-# html.Button('Interpolate', id='interpolate',
-#             style={'display': 'none'  # para nao mostrar, so com o tab certo
-#                    }
-# ),
-# dcc.Slider( id='slider',
-#             # style={'display': 'none'  # para nao mostrar, so com o tab certo
-#             #        },
-#     min=0,
-#     max=len(time_var['ttv']),
-#     step=1,
-#     value=0,
-# )]),
-#
-# html.Div(
-#     dcc.RadioItems(id='Radioheatmap',
-#                     style={'display': 'none'  # para nao mostrar, so com o tab certo
-#                    },
-#        options=[
-#            {'label': 'Positional Map', 'value': 'xy'},
-#            {'label': 'Heatmap', 'value': 'heat'},
-#        ], value='xy'
-#
-#     )),
-#
-#     html.Div([
-#     dcc.Graph(id='timevar_graph',
-#               # style={'display': 'none'  # inline-block
-#               #        }
-#               ),
-#     dcc.RadioItems(
-#         id='Radio',
-#         # style={'display': 'none'},
-#
-#        options=[
-#            {'label': 'Velocity in X', 'value': 'vx'},
-#            {'label': 'Velocity in Y', 'value': 'vy'},
-#            {'label': 'Jerk', 'value': 'jerk'},
-#            {'label': 'X position in t', 'value': 'xt'},
-#            {'label': 'Y Position in t', 'value': 'yt'},
-#            {'label' : 'Velocity', 'value': 'vt'},
-#             {'label' : 'Acceleration', 'value': 'a'}
-#        ], value='vt'
-#
-#     ),
-#
-#     html.Div(id='output_spacevar'), #falta esconder
-#              dcc.Markdown(id='text_spacevar')
-#
-# ]),
-#     html.Div([
-#         html.Button('HighPass (H)', id='highpass', value=''),
-#         html.Button('LowPass (L)', id='lowpass'),
-#         html.Button('BandPass (Bp)', id='bandpass'),
-#         html.Button('Smooth (S)', id='smooth'),
-#         html.Button('Module (Abs)', id='absolute')]
-# ),
-#     html.Div(dcc.Input(id='PreProcessing',
-#     placeholder='Ex: "H 50 L 10"',
-#     type='text',
-#     value='',
-#     # style={'display': 'none'}
-# )),
-#     html.Div([
-#         html.Button('Pre-Processing', id='preprocess'),
-#         dcc.Graph(id='timevar_graph_PP')
-#     ]),
-#
-#     html.Div([
-#         html.Button('Amplitude (A)', id='Amp', value=''),
-#         html.Button('1st Derivative (D)', id='diff1'),
-#         html.Button('2nd Derivative (C)', id='diff2'),
-#         html.Button('RiseAmp (R)', id='riseamp')]
-# ),
-#     html.Div(dcc.Input(id='SCtext',
-#     placeholder='Enter a value...',
-#     type='text',
-#     value='',
-#     # style={'display': 'none'}
-# )),
-#     html.Div(
-#         html.Button('Symbolic Connotation', id='SCbutton')),
-#     html.Div(
-#         dcc.Textarea(
-#         id="SCtest",
-#         placeholder='Enter a value...',
-#         value='This is a TextArea component',
-#         # style={'display': 'none'}
-#     )
-#     ),
-#
-#     html.Div([
-#         dcc.Input(id='regex',
-#         placeholder='Enter Regular Expression...',
-#         type='text',
-#         value='',
-#         # style={'display': 'none'}
-#                   ),
-#         html.Button('Search Regex', id='searchregex'),
-#         dcc.Graph(id='regexgraph')
-#     ])
+    html.Div([
+        html.Button('Amplitude (A)', id='Amp', value='', style={'display': 'none'}),
+        html.Button('1st Derivative (D)', id='diff1', style={'display': 'none'}),
+        html.Button('2nd Derivative (C)', id='diff2', style={'display': 'none'}),
+        html.Button('RiseAmp (R)', id='riseamp', style={'display': 'none'})]
+),
+    html.Div(dcc.Input(id='SCtext',
+    placeholder='Enter a value...',
+    type='text',
+    value='',
+    style={'display': 'none'}
+)),
+    html.Div([
+        html.Button('Symbolic Connotation', id='SCbutton',style={'display': 'none'} ),
+    dcc.Textarea(
+        id="SCtest",
+        placeholder='Enter a value...',
+        value='This is a TextArea component',
+        style={'display': 'none'}
+    )
+    ]),
+
+    html.Div([
+        dcc.Input(id='regex',
+        placeholder='Enter Regular Expression...',
+        type='text',
+        value='',
+        style={'display': 'none'}),
+        html.Button('Search Regex', id='searchregex', style={'display': 'none'}),
+        dcc.Graph(id='regexgraph', style={'display': 'none'})
+    ])
 
 
-],
-)
+])
 
 @app.callback(
     dash.dependencies.Output('tab-output', 'children'),
@@ -779,7 +648,9 @@ def display_content(value):
                                options=[
                                    {'label': 'Positional Map', 'value': 'xy'},
                                    {'label': 'Heatmap', 'value': 'heat'},
-                               ], value='xy'),
+                               ], value='xy'
+
+                               ),
             # dcc.Slider(id='sliderpos',
             #            min=0,
             #            max=len(MouseDict['x']),
@@ -787,38 +658,73 @@ def display_content(value):
             #            value=0,)
                 ])
     if value=='PP':
-        return Div_PP
+        return html.Div([
+                dcc.Graph(id='timevar_graph'),
+
+                dcc.RadioItems(
+                    id='Radio',
+                   options=[
+                       {'label': 'Velocity in X', 'value': 'vx'},
+                       {'label': 'Velocity in Y', 'value': 'vy'},
+                       {'label': 'Jerk', 'value': 'jerk'},
+                       {'label': 'X position in t', 'value': 'xt'},
+                       {'label': 'Y Position in t', 'value': 'yt'},
+                       {'label' : 'Velocity', 'value': 'vt'},
+                        {'label' : 'Acceleration', 'value': 'a'}
+                   ], value='vt'
+
+                ),
+
+                html.Div(id='output_spacevar'),
+                dcc.Markdown(id='text_spacevar')  ,
+            html.Div([
+                html.Button('HighPass (H)', id='highpass', value='' ),
+                html.Button('LowPass (L)', id='lowpass'),
+                html.Button('BandPass (Bp)', id='bandpass'),
+                html.Button('Smooth (S)', id='smooth'),
+                html.Button('Module (Abs)', id='absolute')]
+            ),
+            html.Div(dcc.Input(id='PreProcessing',
+                               placeholder='Ex: "H 50 L 10"',
+                               type='text',
+                               value='',
+                               )),
+            html.Div([
+                html.Button('Pre-Processing', id='preprocess'),
+                dcc.Graph(id='timevar_graph_PP')
+            ])
+        ])
     if value=='SC':
         return html.Div([dcc.Graph(id='timevar_graph_PP'),
-                         # html.Div([
-                         #     html.Button('Amplitude (A)', id='Amp', value=''),
-                         #     html.Button('1st Derivative (D)', id='diff1'),
-                         #     html.Button('2nd Derivative (C)', id='diff2'),
-                         #     html.Button('RiseAmp (R)', id='riseamp')]
-                         # ),
-                         # html.Div(dcc.Input(id='SCtext',
-                         #                    placeholder='Enter a value...',
-                         #                    type='text',
-                         #                    value='',
-                         #                    )),
-                         # html.Div(
-                         #     html.Button('Symbolic Connotation', id='SCbutton')),
-                         # html.Div(
-                         #     dcc.Textarea(
-                         #         id="SCtest",
-                         #         placeholder='Enter a value...',
-                         #         value='Your Symbolic Time Series will appear here',
-                         #         style={'width': '100%'})
-                         #         )
+                         html.Div([
+                             html.Button('Amplitude (A)', id='Amp', value=''),
+                             html.Button('1st Derivative (D)', id='diff1'),
+                             html.Button('2nd Derivative (C)', id='diff2'),
+                             html.Button('RiseAmp (R)', id='riseamp')]
+                         ),
+                         html.Div(dcc.Input(id='SCtext',
+                                            placeholder='Enter a value...',
+                                            type='text',
+                                            value='',
+                                            )),
+                         html.Div(
+                             html.Button('Symbolic Connotation', id='SCbutton')),
+                         html.Div(
+                             dcc.Textarea(
+                                 id="SCtest",
+                                 placeholder='Enter a value...',
+                                 value='Your Symbolic Time Series will appear here',
+                                 style={'width': '100%'})
+                                 )
 
                          ])
     if value=='S':
         return html.Div([
-                # dcc.Input(id='regex',
-                #           placeholder='Enter Regular Expression...',
-                #           type='text',
-                #           value=''),
-                # html.Button('Search Regex', id='searchregex'),
+                dcc.Input(id='regex',
+                          placeholder='Enter Regular Expression...',
+                          type='text',
+                          value=''),
+                html.Button('Search Regex', id='searchregex'),
                 dcc.Graph(id='regexgraph')
             ])
 
@@ -1046,7 +952,8 @@ def PreProcessingWrite(b1,b2,b3,b4,b5, finalStr):
         if(b1>prevb1): #o upgrade/downgrade fez com que isto ficasse a 1 cada vez que e clicado
             finalStr+= 'H '
         prevb1 = b1
-
+    print(b1)
+    print(prevb1)
     if (b2 != None):
         if (b2 >prevb2):
             finalStr += 'L '
@@ -1066,8 +973,7 @@ def PreProcessingWrite(b1,b2,b3,b4,b5, finalStr):
         if (b5 >prevb5):
             finalStr +="ABS "
         prevb5 = b5
-
-    return finalStr
+    return str(finalStr)
 
 
 @app.callback(
@@ -1103,14 +1009,13 @@ def update_figure(selected_option, value):
             #     'line': {'width': 0.5, 'color': 'white'}
             # },
             line={'width': 2, 'color': 'black'},
-            name=str(selected_option)
+            name=i
         ))
 
     traces.append(go.Scatter(
         x=[time_var['ttv'][value]],
         y=[time_var[str(selected_option)][value]],
-        mode='markers',
-        name='sliderpos'))
+        mode='markers'))
 
 
         # print(len(time_var['jerk']))
@@ -1318,5 +1223,4 @@ def display_spacevar(n_clicks):
 
 
 if __name__ == '__main__':
-    print(dcc.__version__)
     app.run_server()
