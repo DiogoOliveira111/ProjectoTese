@@ -69,6 +69,27 @@ for i in collection:
         root.mainloop()
         exit()
 
+def DrawShapes(matchInitial, matchFinal, datax, datay):
+    shapes=[]
+    for i in range(np.size(matchInitial)):
+        shape={
+            'type': 'rect',
+            # x-reference is assigned to the x-values
+            'xref': 'x',
+            # y-reference is assigned to the plot paper [0,1]
+            'yref': 'y',
+            'x0': datax[matchInitial[i]],
+            'y0': min(datay),
+            'x1': datax[matchFinal[i]],
+            'y1': max(datay),
+            'fillcolor': '#d3d3d3',
+            'opacity': 0.2,
+            'line': {
+                'width': 0,
+                }}
+        shapes.append(shape)
+
+    return shapes
 
 MouseDict = dict(t=MouseTime, x=MouseX, y=MouseY)
 dM = pd.DataFrame.from_dict(MouseDict)
@@ -177,43 +198,44 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                                type='text',
                                value=''),
                     html.Button('Pre-Processing', id='preprocess')]
-                )
-        #         html.Div([
-        #             html.Button('Amplitude (A)', id='Amp', value=''),
-        #             html.Button('1st Derivative (D)', id='diff1'),
-        #             html.Button('2nd Derivative (C)', id='diff2'),
-        #             html.Button('RiseAmp (R)', id='riseamp')]
-        #         ),
-        #         html.Div(dcc.Input(id='SCtext',
-        #             placeholder='Enter Symbolic Methods',
-        #             type='text',
-        #             value='',
-        #             # style={'display': 'none'}
-        #         )),
-        #         html.Div(
-        #             html.Button('Symbolic Connotation', id='SCbutton')),
-        #         html.Div(
-        #             dcc.Textarea(
-        #             id="SCtest",
-        #             placeholder='Your symbolic series will appear here.',
-        #             value='',)
-        #         ),
-        #         html.Div([
-        #                 dcc.Input(id='regex',
-        #                 placeholder='Enter Regular Expression...',
-        #                 type='text',
-        #                 value='',
-        #                 # style={'display': 'none'}
-        #           ),
-        #         html.Button('Search Regex', id='searchregex')
-        #                 ],
-        #                 )], style={
-        #                     'width': '25%',
-        #                     'fontFamily': 'Sans-Serif',
-        #                     'float' : 'left',
-        #                     'backgroundColor': colors['background']})
-        #
-        ], style={'float':'left', 'width':'20%', 'margin-left':'5%'}),
+                ),
+                html.Div([
+                    html.Button('Amplitude (A)', id='Amp', value=''),
+                    html.Button('1st Derivative (D)', id='diff1'),
+                    html.Button('2nd Derivative (C)', id='diff2'),
+                    html.Button('RiseAmp (R)', id='riseamp')]
+                ),
+                html.Div(dcc.Input(id='SCtext',
+                    placeholder='Enter Symbolic Methods',
+                    type='text',
+                    value='',
+                    # style={'display': 'none'}
+                )),
+                html.Div(
+                    html.Button('Symbolic Connotation', id='SCbutton')),
+                html.Div(
+                    dcc.Textarea(
+                    id="SCtest",
+                    placeholder='Your symbolic series will appear here.',
+                    value='',)
+                ),
+                html.Div([
+                        dcc.Input(id='regex',
+                        placeholder='Enter Regular Expression...',
+                        type='text',
+                        value='',
+                        # style={'display': 'none'}
+                  ),
+                html.Button('Search Regex', id='searchregex')
+                        ],
+                         style={
+                            'width': '25%',
+                            'fontFamily': 'Sans-Serif',
+                            'float' : 'left',
+                            'backgroundColor': colors['background']}
+
+
+        )], style={'float':'left', 'width':'20%', 'margin-left':'5%'}),
 
     html.Div(children=[
         dcc.Graph(id='timevar_graph'),
@@ -230,7 +252,7 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
             ],
             multi=True,
             placeholder="",
-            value="vt"
+            value=""
         )
     ], style={'display':'inline-block', 'width':'100%'})
 ])
@@ -271,34 +293,38 @@ def display_S(value):
     [dash.dependencies.Input('regex', 'value'),
      dash.dependencies.Input('SCtest', 'value'),
      dash.dependencies.Input('searchregex', 'n_clicks'),
-     dash.dependencies.Input('timevar_graph_PP', 'figure')]
+      dash.dependencies.Input('timevar_graph_PP', 'figure')
+     ]
 )
 def RegexParser(regex, string, n_clicks, data):
     global lastclick2
-    print(string)
-    print(regex)
-    print('entrei')
+    # print(n_clicks)
+    # print(regex)
+    # print('entrei')
+    # print(data)
     if (n_clicks != None):
         if(n_clicks>lastclick2):
             str=numpy.asarray(string)
             matches = []
             traces=[]
+
             for i in range(len(string)):
                 matchInitial=[]
                 matchFinal = []
                 regit = re.finditer(regex,string)
+
                 for i in regit:
                     matchInitial.append((int(i.span()[0])))
                     matchFinal.append(int(i.span()[1]))
-                    # [match.append((int(i.span()[0]),
-                #                int(i.span()[1]))) for i in regit]
-                # print(data)
+
+
 
             matchInitial=np.array(matchInitial)
             matchFinal=np.array(matchFinal)
-            datax = np.array(data['data'][0]['x'])
-            datay=np.array(data['data'][0]['y'])
-            # print(datax[matchInitial])
+            datax = np.array(data['data']['data'][0]['x'])
+            datay=np.array(data['data']['data'][0]['y'])
+            print(np.size([matchInitial]))
+            print(np.size([matchFinal]))
             # print(datay[matchInitial])
 
             traces.append(go.Scatter( #match initial append
@@ -315,12 +341,6 @@ def RegexParser(regex, string, n_clicks, data):
 
                 ),
                 name='Match Initial'
-                # opacity=1,
-                #
-                # marker={
-                #     'size': 10,
-                #     'line': {'width': 0.5, 'color': 'white'}
-                # },
 
             ))
             traces.append(go.Scatter( #match final append
@@ -339,8 +359,8 @@ def RegexParser(regex, string, n_clicks, data):
                 name='Match Final'
             ))
             traces.append(go.Scatter(
-                x=data['data'][0]['x'],
-                y=data['data'][0]['y'],
+                x=datax,
+                y=datay,
                 mode='lines',
                 line=dict(
                     color='black',
@@ -356,7 +376,21 @@ def RegexParser(regex, string, n_clicks, data):
                     legend={'x': 0, 'y': 1},
                     hovermode='closest',
 
+
+                        shapes =DrawShapes(matchInitial,matchFinal,datax, datay)
+
+
+
                 )}
+    else:
+        return {
+            'data': data,
+            'layout': go.Layout(
+                legend={'x': 0, 'y': 1},
+                hovermode='closest',
+            )
+        }
+
 
 @app.callback(
     dash.dependencies.Output('SCtext', 'value'),[
@@ -394,35 +428,40 @@ def SymbolicConnotationWrite(a1,a2,a3,a4, finalStr):
     dash.dependencies.Output('SCtest', 'value'),
     [dash.dependencies.Input('SCbutton', 'n_clicks'),
     dash.dependencies.Input('SCtext', 'value'),
-    dash.dependencies.Input('timevar_graph', 'figure')]
+    dash.dependencies.Input('timevar_graph_PP', 'figure')]
 )
 def SymbolicConnotationStringParser(n_clicks, parse, data):
     global lastclick1
     finalString=[]
+    # print(n_clicks)
+
+    # print(data['data']['data']['x'])
     if (n_clicks != None):
+
         if(n_clicks>lastclick1): # para fazer com que o graf so se altere quando clicamos no botao e nao devido aos outros callbacks-grafico ou input box
             CutString=parse.split()
             for i in range(len(CutString)-1):
                 if(CutString[i] =='A'):
                     #function Amp
-                    finalString.append(AmpC(data['data'][0]['y'],float(CutString[i+1])))
+                    finalString.append(AmpC(data['data']['data'][0]['y'],float(CutString[i+1])))
 
                 elif(CutString[i] =='1D'):
                     #Function 1st Derivative
-                    finalString.append( DiffC(data['data'][0]['y'], float(CutString[i + 1])))
+                    finalString.append( DiffC(data['data']['data'][0]['y'], float(CutString[i + 1])))
 
                 elif (CutString[i] == '2D'):
                     #Function 2nd Derivative
-                    finalString.append( Diff2C(data['data'][0]['y'], float(CutString[i + 1])))
+                    finalString.append( Diff2C(data['data']['data'][0]['y'], float(CutString[i + 1])))
 
                 elif (CutString[i] == 'R'):
                     #Function RiseAmp
-                    finalString.append(RiseAmp(data['data'][0]['y'], float(CutString[i + 1]))) #nao sei se esta a fazer bem
+                    finalString.append(RiseAmp(data['data']['data'][0]['y'], float(CutString[i + 1]))) #nao sei se esta a fazer bem
 
 
-        lastclick1=n_clicks
-        finalString=merge_chars(np.array(finalString))  # esta a dar um erro estranho quando escrevo a caixa
-        return finalString
+
+            finalString=merge_chars(np.array(finalString))  # esta a dar um erro estranho quando escrevo a caixa--FIXED
+        lastclick1 = n_clicks
+    return finalString
 
 
 
@@ -433,8 +472,8 @@ def SymbolicConnotationStringParser(n_clicks, parse, data):
     [dash.dependencies.State('PreProcessing', 'value')]
 )
 def PreProcessStringParser(n_clicks, data, parse):
-    print('herePP')
-    print(n_clicks)
+    # print('herePP')
+    # print(n_clicks)
     global lastclick
     if (n_clicks != None):
         if(n_clicks>lastclick): # para fazer com que o graf so se altere quando clicamos no botao e nao devido aos outros callbacks-grafico ou input box
@@ -516,7 +555,7 @@ def PreProcessingWrite(b1,b2,b3,b4,b5, finalStr):
 
 def UpdateTimeVarGraph(traces, selected_option):
     if (str(selected_option) in ("vt, vx, vy")):
-        print(str(selected_option))
+        # print(time_var[selected_option])
 
         traces.append(go.Scatter(
             x=time_var['ttv'],
@@ -531,6 +570,7 @@ def UpdateTimeVarGraph(traces, selected_option):
             name=str(selected_option)
         ))
     elif (str(selected_option) in ("xt, yt, a, jerk")):
+        # print(str(selected_option))
         traces.append(go.Scatter(
             x=time_var['tt'],
             y=time_var[str(selected_option)],
@@ -550,16 +590,16 @@ def UpdateTimeVarGraph(traces, selected_option):
     dash.dependencies.Output('timevar_graph', 'figure'),
     [dash.dependencies.Input('dropdown_timevar', 'value')])
 def update_timevarfigure(selected_option):
-    print(selected_option)
 
     traces=[]
+    # print(np.size(selected_option))
+    # print(len(selected_option))
+    if(len(selected_option) == 1):
 
-    if(np.size(selected_option) == 1):
+        traces = UpdateTimeVarGraph(traces, selected_option[0])
 
-        traces = UpdateTimeVarGraph(traces, selected_option)
-
-    else:
-        for i in range(np.size(selected_option)):
+    if (len(selected_option)>1):
+         for i in range(np.size(selected_option)):
             traces = UpdateTimeVarGraph(traces, selected_option[i])
 
     return {
@@ -861,3 +901,4 @@ def PP_parser_tab(parse):
 
 
     return data
+
