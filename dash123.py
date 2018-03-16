@@ -78,9 +78,9 @@ def DrawShapes(matchInitial, matchFinal, datax, datay):
             'xref': 'x',
             # y-reference is assigned to the plot paper [0,1]
             'yref': 'y',
-            'x0': datax[matchInitial[i]],
+            'x0': datax[matchInitial[i]-1],
             'y0': min(datay),
-            'x1': datax[matchFinal[i]],
+            'x1': datax[matchFinal[i]-1],
             'y1': max(datay),
             'fillcolor': '#d3d3d3',
             'opacity': 0.2,
@@ -102,9 +102,17 @@ app.config['suppress_callback_exceptions']=True
 # app.config.supress_callback_exceptions=True
 
 colors = {
-    'background': '#000000',
+    'background': '#FFFFFF',
     'text': '#7FDBFF'
 }
+
+
+#Style Buttons
+styleB = {'margin':'10px'}
+
+
+
+# Plot vars - taboutput
 
 Div_XY= dcc.Graph(
                 id='PosGraph',
@@ -135,18 +143,18 @@ Div_XY= dcc.Graph(
                                hovermode='closest')
 
                        },
-                style={'display':'inline-block'})
+                style={'display':'inline-block', 'width':'100%'})
 
-Div_PP = dcc.Graph(id='timevar_graph_PP', style={'display': 'none' })
+Div_PP = dcc.Graph(id='timevar_graph_PP', style={'display': 'none', 'width':'100%'})
 
-Div_SC = dcc.Graph(id='regexgraph', style={'display': 'none' })
+Div_SC = dcc.Graph(id='regexgraph', style={'display': 'none', 'width':'100%'})
 
-Div_S = dcc.Graph(id='regexgraph', style={'display': 'none' })
+Div_S = dcc.Graph(id='regexgraph', style={'display': 'none', 'width':'100%' })
 
 
 app.layout = html.Div(style={'backgroundColor': colors['background']}, children=[
     html.H1(
-        children='Hello',
+        children='Symbolic Search in Web Monitoring Data',
         style={
             'textAlign': 'center',
             'color': colors['text']
@@ -173,37 +181,40 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                     ),
                     html.Div(id='tab-output'
                              , children=[
-                            Div_XY,
-                            Div_PP,
-                            Div_S
-                    ])
+                            html.Div([
+                                Div_XY,
+                                Div_PP,
+                                Div_S], style={'width':'100%'})
+
+                    ], style={'width':'99%', 'height' : '100%'}) # mudei o width de 100 para 99 e meti o height
                 ])
-            ], style={'float':'left',
-                    'display':'inline-block',
+            ], style={
+                    'float':'left',
+                    # 'display':'inline-block',
                        'width':'70%',
-                        'backgroundColor': '#A9A9A9',
+                        'backgroundColor': 'white',
                        })]),
 
             html.Div(children=[
                 html.Div([
-                    html.Button('HighPass (H)', id='highpass', value=''),
-                    html.Button('LowPass (L)', id='lowpass'),
-                    html.Button('BandPass (Bp)', id='bandpass'),
-                    html.Button('Smooth (S)', id='smooth'),
-                    html.Button('Module (Abs)', id='absolute')]
+                    html.Button('HighPass (H)', id='highpass', value='', style=styleB),
+                    html.Button('LowPass (L)', id='lowpass', style=styleB),
+                    html.Button('BandPass (Bp)', id='bandpass', style=styleB),
+                    html.Button('Smooth (S)', id='smooth', style=styleB),
+                    html.Button('Module (Abs)', id='absolute', style=styleB)]
                 ),
                 html.Div(
                     [dcc.Input(id='PreProcessing',
                                placeholder='Ex: "H 50 L 10"',
                                type='text',
                                value=''),
-                    html.Button('Pre-Processing', id='preprocess')]
+                    html.Button('Pre-Processing', id='preprocess', style=styleB)]
                 ),
                 html.Div([
-                    html.Button('Amplitude (A)', id='Amp', value=''),
-                    html.Button('1st Derivative (D)', id='diff1'),
-                    html.Button('2nd Derivative (C)', id='diff2'),
-                    html.Button('RiseAmp (R)', id='riseamp')]
+                    html.Button('Amplitude (A)', id='Amp', value='', style=styleB),
+                    html.Button('1st Derivative (D)', id='diff1', style=styleB),
+                    html.Button('2nd Derivative (C)', id='diff2', style=styleB),
+                    html.Button('RiseAmp (R)', id='riseamp', style=styleB)]
                 ),
                 html.Div(dcc.Input(id='SCtext',
                     placeholder='Enter Symbolic Methods',
@@ -212,7 +223,7 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                     # style={'display': 'none'}
                 )),
                 html.Div(
-                    html.Button('Symbolic Connotation', id='SCbutton')),
+                    html.Button('Symbolic Connotation', id='SCbutton', style=styleB)),
                 html.Div(
                     dcc.Textarea(
                     id="SCtest",
@@ -226,7 +237,7 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                         value='',
                         # style={'display': 'none'}
                   ),
-                html.Button('Search Regex', id='searchregex')
+                html.Button('Search Regex', id='searchregex', style=styleB)
                         ],
                          style={
                             'width': '25%',
@@ -254,7 +265,8 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
             placeholder="",
             value=""
         )
-    ], style={'display':'inline-block', 'width':'100%'})
+    ], style={'display':'inline-block', 'width':'100%'}),
+    html.Div(id='hiddenDiv', style={'display':'none'})
 ])
 
 #------------------------------------------------------
@@ -263,10 +275,13 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
 
 @app.callback(
     dash.dependencies.Output('PosGraph', 'style'),
-    [dash.dependencies.Input('tabs', 'value')])
+    [dash.dependencies.Input('tabs', 'value')]
+)
 def display_Pos(value):
+
     if value=='XY':
-        return {'display':'inline-block'}
+        return {'display': 'inline-block'}
+
     else:
         return {'display':'none'}
 
@@ -289,43 +304,82 @@ def display_S(value):
         return {'display':'none'}
 
 @app.callback(
+        dash.dependencies.Output('hiddenDiv', 'children'),
+        [dash.dependencies.Input('regex', 'value'),
+         dash.dependencies.Input('SCtest', 'value'),
+         dash.dependencies.Input('searchregex', 'n_clicks'),
+         ]
+    )
+def updateHiddenDiv(regex, string, n_clicks):
+    global lastclick2
+    matches=[]
+    if (n_clicks != None):
+        if (n_clicks > lastclick2):
+            matchInitial = []
+            matchFinal = []
+            regit = re.finditer(regex, string)
+
+            for i in regit:
+                matchInitial.append((int(i.span()[0])))
+                matchFinal.append(int(i.span()[1]))
+
+            matchInitial = np.array(matchInitial)
+            matchFinal = np.array(matchFinal)
+            matches=[matchInitial, matchFinal]
+    return matches
+
+
+@app.callback(
     dash.dependencies.Output('regexgraph', 'figure'),
     [dash.dependencies.Input('regex', 'value'),
      dash.dependencies.Input('SCtest', 'value'),
      dash.dependencies.Input('searchregex', 'n_clicks'),
-      dash.dependencies.Input('timevar_graph_PP', 'figure')
+     dash.dependencies.Input('timevar_graph_PP', 'figure')
      ]
 )
 def RegexParser(regex, string, n_clicks, data):
     global lastclick2
-    # print(n_clicks)
-    # print(regex)
-    # print('entrei')
-    # print(data)
+
     if (n_clicks != None):
         if(n_clicks>lastclick2):
             str=numpy.asarray(string)
             matches = []
             traces=[]
 
-            for i in range(len(string)):
-                matchInitial=[]
-                matchFinal = []
-                regit = re.finditer(regex,string)
+            matchInitial=[]
+            matchFinal = []
 
-                for i in regit:
-                    matchInitial.append((int(i.span()[0])))
-                    matchFinal.append(int(i.span()[1]))
+            # print(len(string))
+            # print(len(data['data']['data'][0]['x']))
+            # print("2 data")
+            # print(data)
+            # print(len(string))
+            # print(len(data['data']['data'][0]['y']))
+
+            regit = re.finditer(regex,string)
+
+            for i in regit:
+                matchInitial.append((int(i.span()[0])))
+                matchFinal.append(int(i.span()[1]))
 
 
 
+            # print(matchInitial)
+            # print(matchFinal)
             matchInitial=np.array(matchInitial)
             matchFinal=np.array(matchFinal)
             datax = np.array(data['data']['data'][0]['x'])
-            datay=np.array(data['data']['data'][0]['y'])
-            print(np.size([matchInitial]))
-            print(np.size([matchFinal]))
+            datay= np.array(data['data']['data'][0]['y'])
+            # print(matchInitial)
+            # print(len(datax))
+            # print(len(datay))
+            # print(np.size([matchInitial]))
+            # print(np.size([matchFinal]))
             # print(datay[matchInitial])
+
+            # if(np.size(datay)>np.size(datax)): # para o caso das timevars, vx, vy, jerk , a, o datay> datax
+            #
+            #     datax.resize(len(datay))
 
             traces.append(go.Scatter( #match initial append
                 x=datax[matchInitial],
@@ -344,8 +398,8 @@ def RegexParser(regex, string, n_clicks, data):
 
             ))
             traces.append(go.Scatter( #match final append
-                x=datax[matchFinal],
-                y=datay[matchFinal],
+                x=datax[matchFinal-1],
+                y=datay[matchFinal-1],
                 # text=selected_option[0],
                 mode='markers',
                 opacity=0.7,
@@ -375,13 +429,17 @@ def RegexParser(regex, string, n_clicks, data):
                 'layout': go.Layout(
                     legend={'x': 0, 'y': 1},
                     hovermode='closest',
-
-
-                        shapes =DrawShapes(matchInitial,matchFinal,datax, datay)
-
-
-
+                    shapes =DrawShapes(matchInitial,matchFinal,datax, datay)
                 )}
+        else:
+            return {
+                'data': data,
+                'layout': go.Layout(
+                    legend={'x': 0, 'y': 1},
+                    hovermode='closest',
+                )
+            }
+
     else:
         return {
             'data': data,
@@ -433,7 +491,7 @@ def SymbolicConnotationWrite(a1,a2,a3,a4, finalStr):
 def SymbolicConnotationStringParser(n_clicks, parse, data):
     global lastclick1
     finalString=[]
-    # print(n_clicks)
+
 
     # print(data['data']['data']['x'])
     if (n_clicks != None):
@@ -461,6 +519,11 @@ def SymbolicConnotationStringParser(n_clicks, parse, data):
 
             finalString=merge_chars(np.array(finalString))  # esta a dar um erro estranho quando escrevo a caixa--FIXED
         lastclick1 = n_clicks
+    # print("1 data")
+    # print(data)
+    # print(len((data['data']['data'][0]['y'])))
+    # print(len(finalString))
+    # print(len(data['data']['data'][0]['y']))
     return finalString
 
 
@@ -472,8 +535,7 @@ def SymbolicConnotationStringParser(n_clicks, parse, data):
     [dash.dependencies.State('PreProcessing', 'value')]
 )
 def PreProcessStringParser(n_clicks, data, parse):
-    # print('herePP')
-    # print(n_clicks)
+
     global lastclick
     if (n_clicks != None):
         if(n_clicks>lastclick): # para fazer com que o graf so se altere quando clicamos no botao e nao devido aos outros callbacks-grafico ou input box
@@ -493,8 +555,8 @@ def PreProcessStringParser(n_clicks, data, parse):
 
                 elif (CutString[i] == 'S'):
                     #Function Smooth
-                    smooth_signal = smooth(np.array(data['data'][0]['y'])), int(CutString[i+1]) #estranho porque o smooth retorna uma lista com os dados na 1ªpos e o valor do smooth na segunda
-                    data['data'][0]['y']=smooth_signal[0]
+                    smooth_signal = smooth(np.array(data['data'][0]['y']), int(CutString[i+1])) #estranho porque o smooth retorna uma lista com os dados na 1ªpos e o valor do smooth na segunda
+                    data['data'][0]['y']=smooth_signal
 
                 elif (CutString[i] == 'ABS'):
                     #Function Absolute
@@ -503,7 +565,6 @@ def PreProcessStringParser(n_clicks, data, parse):
 
 
         lastclick=n_clicks
-
     return {
         'data': data,
         'layout': go.Layout(
@@ -554,8 +615,7 @@ def PreProcessingWrite(b1,b2,b3,b4,b5, finalStr):
 
 
 def UpdateTimeVarGraph(traces, selected_option):
-    if (str(selected_option) in ("vt, vx, vy")):
-        # print(time_var[selected_option])
+    if (str(selected_option) in ("vt, vx, vy, a")):
 
         traces.append(go.Scatter(
             x=time_var['ttv'],
@@ -569,7 +629,7 @@ def UpdateTimeVarGraph(traces, selected_option):
             line={'width': 2},
             name=str(selected_option)
         ))
-    elif (str(selected_option) in ("xt, yt, a, jerk")):
+    elif (str(selected_option) in ("xt, yt, jerk")):
         # print(str(selected_option))
         traces.append(go.Scatter(
             x=time_var['tt'],
@@ -630,9 +690,14 @@ def update_timevarfigure(selected_option):
     dash.dependencies.Output('PosGraph', 'figure'),
     [dash.dependencies.Input('interpolate', 'n_clicks'),
      dash.dependencies.Input('Radioheatmap', 'value'),
+     dash.dependencies.Input('hiddenDiv', 'children')
      # dash.dependencies.Input('sliderpos', 'value')
      ])
-def interpolate_graf(n_clicks, value):
+def interpolate_graf(n_clicks, value, matches):
+    global lastclick2
+    print('ola')
+    print(matches)
+    traces=[]
     if(value=='xy'):
         if(n_clicks==None):
             traces = []
@@ -650,7 +715,24 @@ def interpolate_graf(n_clicks, value):
                 )
 
             ))
-            # MouseDict['x']=np.array(MouseDict['x'])
+            # print(matches)
+            # if (len(matches[0]) != 0):
+            #     traces.append(go.Scatter(
+            #         y=space_var['ys'][matches[0]:],
+            #         x=space_var['xs'][matches[0]:],
+            #         name='Position',
+            #         mode='markers',
+            #         opacity=0.7,
+            #         marker=dict(
+            #             size=5,
+            #             color='black',
+            #             line=dict(
+            #                 width=1)
+            #             )
+            #         )
+            #     )
+
+                # MouseDict['x']=np.array(MouseDict['x'])
             # MouseDict['y']=np.array(MouseDict['y'])
             # traces.append(go.Scatter( #para por um slider que mostrava a evoluçao dos pontos no 1º graf
             #     x=[MouseDict['x'][slider]],
@@ -694,6 +776,8 @@ def interpolate_graf(n_clicks, value):
                     hovermode='closest'
                 )
             }
+
+
     elif(value =='heat'):
         x=space_var['xs']
         y=space_var['ys']
@@ -765,6 +849,7 @@ def interpolate_graf(n_clicks, value):
                 hovermode='closest',
             )
             }
+
 
 
 @app.callback(dash.dependencies.Output('text_spacevar', 'children'),
@@ -897,8 +982,6 @@ def PP_parser_tab(parse):
         elif (CutString[i] == 'ABS'):
             # Function Absolute
             data['data'][0]['y'] = np.absolute(data['data'][0]['y'])
-
-
 
     return data
 

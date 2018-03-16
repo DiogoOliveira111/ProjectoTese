@@ -213,12 +213,12 @@ def interpolate_data(track_variables, t_abandon, t_crop=pl.Inf, begin=0, end=-1)
 	                      yt= decimate(yt,20, ftype='fir'),
 	                      tt= t_all[::20],
 	                      ttv= t[::20],
-	                      vx=vx,
-					      vy=vy,
+	                      vx=vx[::20],
+					      vy=vy[::20],
 	                      #vx= decimate(vx,20, ftype='fir'),
 	                      #vy= decimate(vy, 20, ftype='fir'),
 	                      vt= decimate(vt, 20, ftype='fir'),
-	                      a= a,
+	                      a= a[::20],
 	                      jerk=jerk)
 
 	# context_variables['nr_pauses'] = {nr_pauses /
