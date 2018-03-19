@@ -219,7 +219,7 @@ def interpolate_data(track_variables, t_abandon, t_crop=pl.Inf, begin=0, end=-1)
 	                      #vy= decimate(vy, 20, ftype='fir'),
 	                      vt= decimate(vt, 20, ftype='fir'),
 	                      a= a[::20],
-	                      jerk=jerk)
+	                      jerk=jerk[::20])
 
 	# context_variables['nr_pauses'] = {nr_pauses /
 	# 								  float(context_variables['nr_items'][0])}

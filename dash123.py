@@ -108,7 +108,7 @@ colors = {
 
 
 #Style Buttons
-styleB = {'margin':'10px'}
+styleB = {'margin':'10px',}
 
 
 
@@ -144,6 +144,24 @@ Div_XY= dcc.Graph(
 
                        },
                 style={'display':'inline-block', 'width':'100%'})
+
+
+Div_XY_checklist=dcc.Checklist(
+    id='checklistheatmap',
+    options=[
+        {'label': 'Positional Map', 'value': 'XY'},
+        {'label': 'Heatmap', 'value': 'heat'},
+        {'label': 'Interpolate', 'value': 'interpolate'}
+    ],
+    values=['XY'],
+    style={'display':'inline-block', 'width':'100%'})
+
+Div_XY_interpolate=dcc.Checklist(
+    id='interpolatecheck',
+    values=[],
+    style={'display':'inline-block', 'width':'100%'}
+)
+
 
 Div_PP = dcc.Graph(id='timevar_graph_PP', style={'display': 'none', 'width':'100%'})
 
@@ -183,6 +201,8 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                              , children=[
                             html.Div([
                                 Div_XY,
+                                Div_XY_checklist,
+                                Div_XY_interpolate,
                                 Div_PP,
                                 Div_S], style={'width':'100%'})
 
@@ -197,11 +217,11 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
 
             html.Div(children=[
                 html.Div([
-                    html.Button('HighPass (H)', id='highpass', value='', style=styleB),
-                    html.Button('LowPass (L)', id='lowpass', style=styleB),
-                    html.Button('BandPass (Bp)', id='bandpass', style=styleB),
-                    html.Button('Smooth (S)', id='smooth', style=styleB),
-                    html.Button('Module (Abs)', id='absolute', style=styleB)]
+                    html.Button('HighPass (H)', id='highpass', value='', style=styleB, title='HighPass'),
+                    html.Button('LowPass (L)', id='lowpass', style=styleB, title='LowPass'),
+                    html.Button('BandPass (Bp)', id='bandpass', style=styleB, title='BandPass'),
+                    html.Button('Smooth (S)', id='smooth', style=styleB, title='Smooth'),
+                    html.Button('Module (Abs)', id='absolute', style=styleB, title='Module')]
                 ),
                 html.Div(
                     [dcc.Input(id='PreProcessing',
@@ -211,10 +231,10 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                     html.Button('Pre-Processing', id='preprocess', style=styleB)]
                 ),
                 html.Div([
-                    html.Button('Amplitude (A)', id='Amp', value='', style=styleB),
-                    html.Button('1st Derivative (D)', id='diff1', style=styleB),
-                    html.Button('2nd Derivative (C)', id='diff2', style=styleB),
-                    html.Button('RiseAmp (R)', id='riseamp', style=styleB)]
+                    html.Button('Amplitude (A)', id='Amp', value='', style=styleB, title='Amplitude'),
+                    html.Button('1st Derivative (D)', id='diff1', style=styleB, title='1st Derivative'),
+                    html.Button('2nd Derivative (C)', id='diff2', style=styleB, title='2nd Derivative'),
+                    html.Button('RiseAmp (R)', id='riseamp', style=styleB, title='RiseAmp')]
                 ),
                 html.Div(dcc.Input(id='SCtext',
                     placeholder='Enter Symbolic Methods',
@@ -286,6 +306,38 @@ def display_Pos(value):
         return {'display':'none'}
 
 @app.callback(
+    dash.dependencies.Output('checklistheatmap', 'style'),
+    [dash.dependencies.Input('tabs', 'value')]
+)
+def display_checklist(value):
+
+    if value=='XY':
+        return {'display': 'inline-block'}
+
+    else:
+        return {'display':'none'}
+
+@app.callback(
+    dash.dependencies.Output('interpolatecheck', 'style'),
+    [dash.dependencies.Input('tabs', 'value')]
+)
+# def display_interpolatecheck(value): Para escrever a checklist com a opçao interpolate caso se tenha selecionado a opçao positional graph em cima
+#
+#     if value=='XY':
+#         return {'display': 'inline-block'}
+#
+#     else:
+#         return {'display':'none'}
+#
+# @app.callback(
+#     dash.dependencies.Output('interpolatecheck', 'options'),
+#     [dash.dependencies.Input('checklistheatmap', 'value')])
+# def showInterpolate(value):
+#     if (value=='XY'):
+#         return [{'label': 'Interpolate', 'value': 'interpolate'}]
+
+#
+@app.callback(
     dash.dependencies.Output('timevar_graph_PP', 'style'),
     [dash.dependencies.Input('tabs', 'value')])
 def display_PP(value):
@@ -303,30 +355,30 @@ def display_S(value):
     else:
         return {'display':'none'}
 
-@app.callback(
-        dash.dependencies.Output('hiddenDiv', 'children'),
-        [dash.dependencies.Input('regex', 'value'),
-         dash.dependencies.Input('SCtest', 'value'),
-         dash.dependencies.Input('searchregex', 'n_clicks'),
-         ]
-    )
-def updateHiddenDiv(regex, string, n_clicks):
-    global lastclick2
-    matches=[]
-    if (n_clicks != None):
-        if (n_clicks > lastclick2):
-            matchInitial = []
-            matchFinal = []
-            regit = re.finditer(regex, string)
-
-            for i in regit:
-                matchInitial.append((int(i.span()[0])))
-                matchFinal.append(int(i.span()[1]))
-
-            matchInitial = np.array(matchInitial)
-            matchFinal = np.array(matchFinal)
-            matches=[matchInitial, matchFinal]
-    return matches
+# @app.callback(
+#         dash.dependencies.Output('hiddenDiv', 'children'),
+#         [dash.dependencies.Input('regex', 'value'),
+#          dash.dependencies.Input('SCtest', 'value'),
+#          dash.dependencies.Input('searchregex', 'n_clicks'),
+#          ]
+#     )
+# def updateHiddenDiv(regex, string, n_clicks):
+#     global lastclick2
+#     matches=[]
+#     if (n_clicks != None):
+#         if (n_clicks > lastclick2):
+#             matchInitial = []
+#             matchFinal = []
+#             regit = re.finditer(regex, string)
+#
+#             for i in regit:
+#                 matchInitial.append((int(i.span()[0])))
+#                 matchFinal.append(int(i.span()[1]))
+#
+#             matchInitial = np.array(matchInitial)
+#             matchFinal = np.array(matchFinal)
+#             matches=[matchInitial, matchFinal]
+#     return matches
 
 
 @app.callback(
@@ -398,7 +450,7 @@ def RegexParser(regex, string, n_clicks, data):
 
             ))
             traces.append(go.Scatter( #match final append
-                x=datax[matchFinal-1],
+                x=datax[matchFinal-1], #porque -1 ?
                 y=datay[matchFinal-1],
                 # text=selected_option[0],
                 mode='markers',
@@ -615,7 +667,7 @@ def PreProcessingWrite(b1,b2,b3,b4,b5, finalStr):
 
 
 def UpdateTimeVarGraph(traces, selected_option):
-    if (str(selected_option) in ("vt, vx, vy, a")):
+    if (str(selected_option) in ("vt, vx, vy, a, jerk")):
 
         traces.append(go.Scatter(
             x=time_var['ttv'],
@@ -629,7 +681,7 @@ def UpdateTimeVarGraph(traces, selected_option):
             line={'width': 2},
             name=str(selected_option)
         ))
-    elif (str(selected_option) in ("xt, yt, jerk")):
+    elif (str(selected_option) in ("xt, yt")):
         # print(str(selected_option))
         traces.append(go.Scatter(
             x=time_var['tt'],
@@ -688,168 +740,281 @@ def update_timevarfigure(selected_option):
 
 @app.callback(
     dash.dependencies.Output('PosGraph', 'figure'),
-    [dash.dependencies.Input('interpolate', 'n_clicks'),
-     dash.dependencies.Input('Radioheatmap', 'value'),
-     dash.dependencies.Input('hiddenDiv', 'children')
+    # [dash.dependencies.Input('interpolate', 'n_clicks'),
+     [dash.dependencies.Input('checklistheatmap', 'value')
+     # dash.dependencies.Input('hiddenDiv', 'children')
      # dash.dependencies.Input('sliderpos', 'value')
      ])
-def interpolate_graf(n_clicks, value, matches):
-    global lastclick2
-    print('ola')
-    print(matches)
+def interpolate_graf(value):
+    # global lastclick2
+    # print(matches)
     traces=[]
-    if(value=='xy'):
-        if(n_clicks==None):
-            traces = []
-            traces.append(go.Scatter(
-                y=MouseDict['y'],
-                x=MouseDict['x'],
-                name='Position',
-                mode='markers',
-                opacity=0.7,
-                marker=dict(
-                    size=5,
-                    color='white',
-                    line=dict(
-                        width=1)
-                )
-
-            ))
-            # print(matches)
-            # if (len(matches[0]) != 0):
-            #     traces.append(go.Scatter(
-            #         y=space_var['ys'][matches[0]:],
-            #         x=space_var['xs'][matches[0]:],
-            #         name='Position',
-            #         mode='markers',
-            #         opacity=0.7,
-            #         marker=dict(
-            #             size=5,
-            #             color='black',
-            #             line=dict(
-            #                 width=1)
-            #             )
-            #         )
-            #     )
-
-                # MouseDict['x']=np.array(MouseDict['x'])
-            # MouseDict['y']=np.array(MouseDict['y'])
-            # traces.append(go.Scatter( #para por um slider que mostrava a evoluçao dos pontos no 1º graf
-            #     x=[MouseDict['x'][slider]],
-            #     y=[MouseDict['y'][slider]],
-            #     mode='markers'))
-            return {
-                'data': traces,
-                'layout': go.Layout(
-                    showlegend=True,
-                    autosize=True,
-                    xaxis={'title': 'X position'},
-                    yaxis={'title': 'Y position'},
-                    legend={'x': 'X', 'y': 'Y'},
-                    hovermode='closest'
-                )
-            }
-
-        if (n_clicks!=None): #1ª vez n_clicks== None
-            traces = []
-            traces.append(go.Scatter(
-                x=space_var['xs'],
-                y=space_var['ys'],
-                #text=selected_option[0],
-                opacity=0.7,
-                # marker={
-                #     'size': 5,
-                #     'line': {'width': 0.5, 'color': 'white'}
-                # },
-                line={'width': 2, 'color': 'black'},
-                name="Interpolated Position"
-            ))
-
-            return {
-                'data': traces,
-                'layout': go.Layout(
-                    showlegend=True,
-                    autosize=True,
-                    xaxis={'title': 'X position Interpolated'},
-                    yaxis={'title': 'Y position Interpolated'},
-                    legend={'x': 0, 'y': 1},
-                    hovermode='closest'
-                )
-            }
-
-
-    elif(value =='heat'):
-        x=space_var['xs']
-        y=space_var['ys']
-        colorscale = ['#7A4579', '#D56073', 'rgb(236,158,105)', (1, 1, 0.2), (0.98, 0.98, 0.98)]
-        # traces=[
-
-        trace1 = go.Scatter(
-            x=x,
-            y=y,
+    print(value)
+    if value is None:
+        traces.append(go.Scatter(
+            y=MouseDict['y'],
+            x=MouseDict['x'],
+            name='Position',
             mode='markers',
-            name='Point Position',
-            marker=dict(color='rgb(102,0,0)', size=5, opacity=0.4)
-        )
-        trace2 = go.Histogram2dcontour(
-            x=x,
-            y=y,
-            name='Position Density',
-            ncontours=20,
-            colorscale='Hot',
-            reversescale=True,
-            showscale=False
-        )
-
-        data = [trace1, trace2]
-
-        layout = go.Layout(
-            showlegend=True,
-            autosize=True,
-            # width=600,
-            # height=550,
-            xaxis=dict(
-                domain=[0, 0.85],
-                showgrid=False,
-                zeroline=False
-            ),
-            yaxis=dict(
-                domain=[0, 0.85],
-                showgrid=False,
-                zeroline=False
-            ),
-            margin=dict(
-                t=50
-            ),
-            hovermode='closest',
-            bargap=0,
-            xaxis2=dict(
-                domain=[0.85, 1],
-                showgrid=False,
-                zeroline=False
-            ),
-            yaxis2=dict(
-                domain=[0.85, 1],
-                showgrid=False,
-                zeroline=False
+            opacity=0.7,
+            marker=dict(
+                size=5,
+                color='white',
+                line=dict(
+                    width=1)
             )
-        )
-            # go.Histogram2d(x=x, y=y,
-            #                 #colorscale='YIGnBu',
-            #                 zmax=10,
-            #                 nbinsx=50,
-            #                 nbinsy=50,
-            #                 zauto=False)]
-        return {
-            'data': data,
+
+        ))
+
+    else:
+        print('lol')
+        for i in range(len(value)):
+            if value[i]=='XY':
+                print('xy')
+                traces.append(go.Scatter(
+                    y=MouseDict['y'],
+                    x=MouseDict['x'],
+                    name='Position',
+                    mode='markers',
+                    opacity=0.7,
+                    marker=dict(
+                        size=5,
+                        color='white',
+                        line=dict(
+                            width=1)
+                    )
+
+                ))
+            if value[i]=='interpolate':
+                print('interpolate')
+                traces = []
+                traces.append(go.Scatter(
+                    x=space_var['xs'],
+                    y=space_var['ys'],
+                    # text=selected_option[0],
+                    opacity=0.7,
+                    # marker={
+                    #     'size': 5,
+                    #     'line': {'width': 0.5, 'color': 'white'}
+                    # },
+                    line={'width': 2, 'color': 'black'},
+                    name="Interpolated Position"
+                ))
+            if value[i]=='heat':
+                print('heat')
+                x = space_var['xs']
+                y = space_var['ys']
+                colorscale = ['#7A4579', '#D56073', 'rgb(236,158,105)', (1, 1, 0.2), (0.98, 0.98, 0.98)]
+                # traces=[
+
+                trace1 = go.Scatter(
+                    x=x,
+                    y=y,
+                    mode='markers',
+                    name='Point Position',
+                    marker=dict(color='rgb(102,0,0)', size=5, opacity=0.4)
+                )
+                trace2 = go.Histogram2dcontour(
+                    x=x,
+                    y=y,
+                    name='Position Density',
+                    ncontours=20,
+                    colorscale='Hot',
+                    reversescale=True,
+                    showscale=False
+                )
+
+                traces = [trace1, trace2]
+
+                layout = go.Layout(
+                    showlegend=True,
+                    autosize=True,
+                    # width=600,
+                    # height=550,
+                    xaxis=dict(
+                        domain=[0, 0.85],
+                        showgrid=False,
+                        zeroline=False
+                    ),
+                    yaxis=dict(
+                        domain=[0, 0.85],
+                        showgrid=False,
+                        zeroline=False
+                    ),
+                    margin=dict(
+                        t=50
+                    ),
+                    hovermode='closest',
+                    bargap=0,
+                    xaxis2=dict(
+                        domain=[0.85, 1],
+                        showgrid=False,
+                        zeroline=False
+                    ),
+                    yaxis2=dict(
+                        domain=[0.85, 1],
+                        showgrid=False,
+                        zeroline=False
+                    )
+                )
+
+    # if(value=='XY'):
+    #     # traces = []
+    #     traces.append(go.Scatter(
+    #             y=MouseDict['y'],
+    #             x=MouseDict['x'],
+    #             name='Position',
+    #             mode='markers',
+    #             opacity=0.7,
+    #             marker=dict(
+    #                 size=5,
+    #                 color='white',
+    #                 line=dict(
+    #                     width=1)
+    #             )
+    #
+    #         ))
+    #         # print(matches) #aparecer as matches no posgraph
+    #         # if (len(matches[0]) != 0):
+    #         #     traces.append(go.Scatter(
+    #         #         y=space_var['ys'][matches[0]:],
+    #         #         x=space_var['xs'][matches[0]:],
+    #         #         name='Position',
+    #         #         mode='markers',
+    #         #         opacity=0.7,
+    #         #         marker=dict(
+    #         #             size=5,
+    #         #             color='black',
+    #         #             line=dict(
+    #         #                 width=1)
+    #         #             )
+    #         #         )
+    #         #     )
+    #
+    #             # MouseDict['x']=np.array(MouseDict['x'])
+    #         # MouseDict['y']=np.array(MouseDict['y'])
+    #         # traces.append(go.Scatter( #para por um slider que mostrava a evoluçao dos pontos no 1º graf
+    #         #     x=[MouseDict['x'][slider]],
+    #         #     y=[MouseDict['y'][slider]],
+    #         #     mode='markers'))
+    #         # return {
+    #         #     'data': traces,
+    #         #     'layout': go.Layout(
+    #         #         showlegend=True,
+    #         #         autosize=True,
+    #         #         xaxis={'title': 'X position'},
+    #         #         yaxis={'title': 'Y position'},
+    #         #         legend={'x': 'X', 'y': 'Y'},
+    #         #         hovermode='closest'
+    #         #     )
+    #         # }
+    #
+    #     if (value== 'interpolate'): #1ª vez n_clicks== None
+    #         traces = []
+    #         traces.append(go.Scatter(
+    #             x=space_var['xs'],
+    #             y=space_var['ys'],
+    #             #text=selected_option[0],
+    #             opacity=0.7,
+    #             # marker={
+    #             #     'size': 5,
+    #             #     'line': {'width': 0.5, 'color': 'white'}
+    #             # },
+    #             line={'width': 2, 'color': 'black'},
+    #             name="Interpolated Position"
+    #         ))
+    #
+    #     return {
+    #             'data': traces,
+    #             'layout': go.Layout(
+    #                 showlegend=True,
+    #                 autosize=True,
+    #                 xaxis={'title': 'X position Interpolated'},
+    #                 yaxis={'title': 'Y position Interpolated'},
+    #                 legend={'x': 0, 'y': 1},
+    #                 hovermode='closest'
+    #                 )
+    #             }
+    # if(value=='heat'):
+    #     x=space_var['xs']
+    #     y=space_var['ys']
+    #     colorscale = ['#7A4579', '#D56073', 'rgb(236,158,105)', (1, 1, 0.2), (0.98, 0.98, 0.98)]
+    #     # traces=[
+    #
+    #     trace1 = go.Scatter(
+    #         x=x,
+    #         y=y,
+    #         mode='markers',
+    #         name='Point Position',
+    #         marker=dict(color='rgb(102,0,0)', size=5, opacity=0.4)
+    #     )
+    #     trace2 = go.Histogram2dcontour(
+    #         x=x,
+    #         y=y,
+    #         name='Position Density',
+    #         ncontours=20,
+    #         colorscale='Hot',
+    #         reversescale=True,
+    #         showscale=False
+    #     )
+    #
+    #     data = [trace1, trace2]
+    #
+    #     layout = go.Layout(
+    #         showlegend=True,
+    #         autosize=True,
+    #         # width=600,
+    #         # height=550,
+    #         xaxis=dict(
+    #             domain=[0, 0.85],
+    #             showgrid=False,
+    #             zeroline=False
+    #         ),
+    #         yaxis=dict(
+    #             domain=[0, 0.85],
+    #             showgrid=False,
+    #             zeroline=False
+    #         ),
+    #         margin=dict(
+    #             t=50
+    #         ),
+    #         hovermode='closest',
+    #         bargap=0,
+    #         xaxis2=dict(
+    #             domain=[0.85, 1],
+    #             showgrid=False,
+    #             zeroline=False
+    #         ),
+    #         yaxis2=dict(
+    #             domain=[0.85, 1],
+    #             showgrid=False,
+    #             zeroline=False
+    #         )
+    #     )
+    #         # go.Histogram2d(x=x, y=y, nao interessa
+    #         #                 #colorscale='YIGnBu',
+    #         #                 zmax=10,
+    #         #                 nbinsx=50,
+    #         #                 nbinsy=50,
+    #         #                 zauto=False)]
+    #     return {
+    #         'data': data,
+    #         'layout': go.Layout(
+    #             xaxis=dict(ticks='', showgrid=False, zeroline=False, nticks=20),
+    #             yaxis=dict(ticks='', showgrid=False, zeroline=False, nticks=20),
+    #             autosize=True,
+    #             hovermode='closest',
+    #             )
+    #         }
+    return {
+            'data': traces,
             'layout': go.Layout(
                 xaxis=dict(ticks='', showgrid=False, zeroline=False, nticks=20),
                 yaxis=dict(ticks='', showgrid=False, zeroline=False, nticks=20),
                 autosize=True,
                 hovermode='closest',
-            )
+                )
             }
-
 
 
 @app.callback(dash.dependencies.Output('text_spacevar', 'children'),
