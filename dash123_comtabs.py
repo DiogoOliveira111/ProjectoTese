@@ -500,7 +500,7 @@ html.Div(children= dcc.Graph(
 
     )),
 html.Div([
-html.Button('Interpolate', id='interpolate',
+html.Button('Interpolate', id='interpolatebutton',
             style={'display': 'none'  # para nao mostrar, so com o tab certo
                    }
 ),

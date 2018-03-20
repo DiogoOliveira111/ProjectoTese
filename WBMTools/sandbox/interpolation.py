@@ -195,8 +195,8 @@ def interpolate_data(track_variables, t_abandon, t_crop=pl.Inf, begin=0, end=-1)
 	a = pl.diff(vt) / pl.diff(t)
 	jerk = pl.diff(a) / pl.diff(t[:-1])
 
-	space_variables = dict(			xs= xs[::20],
-									ys= ys[::20],
+	space_variables = dict(			xs= xs, #tirei decimaçao de 20 "xs[::20]
+									ys= ys,
 									l_strokes=pl.array(l_strokes),
 									straightness= pl.array(straightness),
 									jitter= jitter,
