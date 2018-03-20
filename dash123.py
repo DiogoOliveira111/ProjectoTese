@@ -530,9 +530,9 @@ def SymbolicConnotationWrite(a1,a2,a3,a4, finalStr):
 def SymbolicConnotationStringParser(n_clicks, parse, data):
     global lastclick1
     finalString=[]
-    print('data size')
 
-    print(len(data['data']['data'][0]['y']))
+    # print('data size')
+    # print(len(data['data']['data'][0]['y']))
     # print(data['data']['data']['x'])
     if (n_clicks != None):
 
@@ -559,11 +559,9 @@ def SymbolicConnotationStringParser(n_clicks, parse, data):
 
             finalString=merge_chars(np.array(finalString))  # esta a dar um erro estranho quando escrevo a caixa--FIXED
         lastclick1 = n_clicks
-    # print("1 data")
-    # print(data)
-    # print(len((data['data']['data'][0]['y'])))
-    print('string size')
-    print(len(finalString))
+
+    # print('string size')
+    # print(len(finalString))
     # print(len(data['data']['data'][0]['y']))
 
     return finalString
@@ -841,6 +839,8 @@ def interpolate_graf(value, json_data):
                 line={'width': 2, 'color': 'black'},
                 name="Interpolated Position"
             ))
+            print(MouseDict['t'])
+            print(time_var['tt'])
 
 
 
