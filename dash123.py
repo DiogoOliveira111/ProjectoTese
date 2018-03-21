@@ -51,7 +51,7 @@ for i in collection:
     if( event['Type']=='Mouse'):
         data=event['Data'].split(';')
         if (i==0):
-            initial_time = float(data[-1])
+            initial_time = float(data[-1]) #nao devia ser 0 em vez de -1?
             MouseTime.append(initial_time/1000)
         else:
             MouseTime.append((float(data[-1]) - initial_time) / 1000)
@@ -289,7 +289,8 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
             value=""
         )
     ], style={'display':'inline-block', 'width':'100%'}),
-    html.Div(id='hiddenDiv', style={'display':'none'})
+    html.Div(id='hiddenDiv', style={'display':'none'}),
+    html.Div(id='hiddenDiv_timevar', style={'display':'none'})
 ])
 
 #------------------------------------------------------
@@ -338,6 +339,12 @@ def display_S(value):
         return {'display':'inline-block'}
     else:
         return {'display':'none'}
+@app.callback(
+    dash.dependencies.Output('hiddenDiv_timevar', 'children'),
+    [dash.dependencies.Input('dropdown_timevar', 'value')]
+)
+def updateTimeVar(value):
+    return json.dumps(value)
 
 @app.callback(
         dash.dependencies.Output('hiddenDiv', 'children'),
@@ -564,6 +571,7 @@ def SymbolicConnotationStringParser(n_clicks, parse, data):
     # print(len(finalString))
     # print(len(data['data']['data'][0]['y']))
 
+
     return finalString
 
 
@@ -730,20 +738,21 @@ def update_timevarfigure(selected_option):
     dash.dependencies.Output('PosGraph', 'figure'),
     # [dash.dependencies.Input('interpolate', 'n_clicks'),
      [dash.dependencies.Input('checklistheatmap', 'values'),
-     dash.dependencies.Input('hiddenDiv', 'children')
+     dash.dependencies.Input('hiddenDiv', 'children'),
+     dash.dependencies.Input('hiddenDiv_timevar', 'children')
      # dash.dependencies.Input('sliderpos', 'value')
      ])
-def interpolate_graf(value, json_data):
-    print(len(MouseDict['x']))
-    print(len(space_var['xs']))
+def interpolate_graf(value, json_data, timevar):
+    # print(len(MouseDict['t']))
+    # print(len(time_var['ttv']))
 
     matches = json.loads(json_data)
+    timevar=json.loads(timevar)
+    print(timevar)
 
     matchInitial = matches['matchInitial']
     matchFinal = matches['matchFinal']
 
-    # global lastclick2
-    # print(matches)
     traces=[]
     for i in range(len(value)):
         if(value[i]=='XY'):
@@ -839,8 +848,9 @@ def interpolate_graf(value, json_data):
                 line={'width': 2, 'color': 'black'},
                 name="Interpolated Position"
             ))
-            print(MouseDict['t'])
-            print(time_var['tt'])
+            # print(len(time_var['tt']))
+            # print(len(time_var['ttv']))
+
 
 
 
@@ -852,9 +862,49 @@ def interpolate_graf(value, json_data):
             for a in range(matchInitial[i], matchFinal[i]+1): #+1 porque o range faz ate o valor-1
                 lista_matches.append(a)
 
+        nova_lista=[]
+
+        # for i in range(len(lista_matches)):
+        #     valor_time=time_var['ttv'][lista_matches[i]]
+        #     nova_lista.append(MouseDict['t'].index(time_var['ttv'][lista_matches[i]]))
+
+        print(timevar)
+        time_array=np.array(MouseDict['t'])
+        listA=["vt", "vx", "vy", "a", "jerk"]
+        listB=["xt", "yt"]
+
+        if timevar[0] in listA: #ainda so funciona para 1 signal
+            for i in range (len(matchInitial)):
+                nova_lista.append(np.where( (time_array>= time_var['ttv'][matchInitial[i]]) & (time_array<= time_var['ttv'][matchFinal[i]]) ))
+
+        if(timevar[0] in listB):
+            for i in range (len(matchInitial)):
+                nova_lista.append(np.where( (time_array>= time_var['tt'][matchInitial[i]]) & (time_array<= time_var['tt'][matchFinal[i]]) ))
+
+
+        flat_list=np.concatenate(nova_lista, axis=1)[0]
+        flat_list=np.array(flat_list)
+
+
+        #concatenate com ciclos
+        # for i in range(len(nova_lista)):
+        #     for a in range(len(nova_lista[i])):
+        #         for b in range(len(nova_lista[i][a])):
+        #             flat_list.append(nova_lista[i][a][b])
+        # flat_list=  np.concatenate(nova_lista, axis=0)
+
+
+        #aproximaçao do valor de tempo do outro vector
+        # ratio=len(MouseDict['t'])/len(time_var['ttv'])
+        # nova_lista = [i * ratio for i in lista_matches]
+        # nova_lista=np.array((nova_lista))
+        # nova_lista=np.rint(nova_lista).astype(int)
+
+        Xpos=np.array(MouseDict['x'])
+        Ypos=np.array(MouseDict['y'])
         traces.append(go.Scatter(
-            x=space_var['xs'][lista_matches],
-            y=space_var['ys'][lista_matches],
+            x=Xpos[flat_list],
+            y=Ypos[flat_list],
             # text=selected_option[0],
             opacity=1,
             mode='markers',
