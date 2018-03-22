@@ -110,7 +110,7 @@ def DrawShapes(matchInitial, matchFinal, datax, datay):
             'x1': datax[matchFinal[i]-1],
             'y1': max(datay),
             'fillcolor': '#A7CCED',
-            'opacity': 0.2,
+            'opacity': 0.7,
             'line': {
                 'width': 0,
                 }}
@@ -360,7 +360,7 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
         )], style={'float':'left', 'width':'20%', 'margin-left':'5%'}),
 
     html.Div(children=[
-        dcc.Graph(id='timevar_graph'),
+        dcc.Graph(id='timevar_graph', style={'width' : '100%'}),
 
         dcc.Dropdown( id='dropdown_timevar',
             options=[
