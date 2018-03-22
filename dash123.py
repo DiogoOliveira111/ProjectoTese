@@ -71,6 +71,31 @@ for i in collection:
         root.mainloop()
         exit()
 
+MouseDict = dict(t=MouseTime, x=MouseX, y=MouseY)
+dM = pd.DataFrame.from_dict(MouseDict)
+time_var,space_var=interpolate_data(dM,t_abandon=20)
+vars={'time_var': time_var, 'space_var': space_var}
+
+app = dash.Dash()
+app.config['suppress_callback_exceptions']=True
+# app.scripts.config.serve_locally = True #no idea what this does
+# app.config.supress_callback_exceptions=True
+
+
+#-----------------------------
+#Style Buttons
+#-----------------------------
+styleB = {'margin-top':'15px', 'margin-left':'5px', 'margin-right':'5px', 'margin-bottom':'15px'}
+# margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
+colors = {
+    'background': '#FFFFFF',
+    'text': '#304D6D'
+}
+
+#-----------------------------
+#Auxiliary Functions
+#-----------------------------
+
 def DrawShapes(matchInitial, matchFinal, datax, datay):
     shapes=[]
     for i in range(np.size(matchInitial)):
@@ -84,7 +109,7 @@ def DrawShapes(matchInitial, matchFinal, datax, datay):
             'y0': min(datay),
             'x1': datax[matchFinal[i]-1],
             'y1': max(datay),
-            'fillcolor': '#d3d3d3',
+            'fillcolor': '#A7CCED',
             'opacity': 0.2,
             'line': {
                 'width': 0,
@@ -93,29 +118,88 @@ def DrawShapes(matchInitial, matchFinal, datax, datay):
 
     return shapes
 
-MouseDict = dict(t=MouseTime, x=MouseX, y=MouseY)
-dM = pd.DataFrame.from_dict(MouseDict)
-time_var,space_var=interpolate_data(dM,t_abandon=20)
-vars={'time_var': time_var, 'space_var': space_var}
 
-app = dash.Dash()
-app.config['suppress_callback_exceptions']=True
-# app.scripts.config.serve_locally = True #no idea what this does
-# app.config.supress_callback_exceptions=True
+def UpdateTimeVarGraph(traces, selected_option):
+    if (str(selected_option) in ("vt, vx, vy, a, jerk")):
 
-colors = {
-    'background': '#FFFFFF',
-    'text': '#7FDBFF'
-}
+        traces.append(go.Scatter(
+            x=time_var['ttv'],
+            y=time_var[selected_option],
+            text=selected_option,
+            opacity=0.7,
+            # marker={
+            #     'size': 5,
+            #     'line': {'width': 0.5, 'color': 'white'}
+            # },
+            line={'width': 2},
+            name=str(selected_option)
+        ))
+    elif (str(selected_option) in ("xt, yt")):
+        traces.append(go.Scatter(
+            x=time_var['tt'],
+            y=time_var[str(selected_option)],
+            text=selected_option,
+            opacity=0.7,
+            # marker={
+            #     'size': 5,
+            #     'line': {'width': 0.5, 'color': 'white'}
+            # },
+            line={'width': 2},
+            name=str(selected_option)
+        ))
+
+    return traces
+
+def createLayoutTimevar(value):
+    Titles=dict(vt='Velocity in time',
+         vy='Velocity in Y',
+         vx='Velocity in X',
+         jerk='Jerk',
+         a='Acceleration in time',
+         xt='X position in time',
+         yt='Y position in time'
+         )
+    layout=go.Layout(
+            # legend={'x': 0, 'y': 1},
+            hovermode='closest',
+            showlegend = True,
+            autosize = True,
+                            # width=600,
+                            # height=550,
+            title =Titles[str(value)] ,
+            xaxis = dict(
+            # domain=[0, 0.85],
+                showgrid=False,
+                zeroline=False,
+                title='Time',
+                titlefont=dict(
+                family='Courier New, monospace',
+                size=14,
+                color='#7f7f7f'
+                ),
+            ),
+            yaxis = dict(
+            # domain=[0, 0.85],
+                showgrid=False,
+                zeroline=False,
+                title=str(value),
+                titlefont=dict(
+                    family='Courier New, monospace',
+                    size=14,
+                    color='#7f7f7f'
+                    ),
+                ),
+            margin = dict(
+                    t=50
+                ),
+            bargap = 0,
+        )
+    return layout
 
 
-#Style Buttons
-styleB = {'margin':'10px',}
-
-
-
+#------------------------------
 # Plot vars - taboutput
-
+#-------------------------------
 Div_XY= dcc.Graph(
                 id='PosGraph',
                 figure={
@@ -172,6 +256,10 @@ Div_SC = dcc.Graph(id='regexgraph', style={'display': 'none', 'width':'100%'})
 
 Div_S = dcc.Graph(id='regexgraph', style={'display': 'none', 'width':'100%' })
 
+#-------------------------------------------------------------------------------
+# App Layout
+#-----------------------------------------------------------------------------
+
 
 app.layout = html.Div(style={'backgroundColor': colors['background']}, children=[
     html.H1(
@@ -220,11 +308,11 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
 
             html.Div(children=[
                 html.Div([
-                    html.Button('HighPass (H)', id='highpass', value='', style=styleB, title='HighPass'),
-                    html.Button('LowPass (L)', id='lowpass', style=styleB, title='LowPass'),
-                    html.Button('BandPass (Bp)', id='bandpass', style=styleB, title='BandPass'),
-                    html.Button('Smooth (S)', id='smooth', style=styleB, title='Smooth'),
-                    html.Button('Module (Abs)', id='absolute', style=styleB, title='Module')]
+                    html.Button('H', id='highpass', value='', style=styleB, title='HighPass'),
+                    html.Button('L', id='lowpass', style=styleB, title='LowPass'),
+                    html.Button('BP', id='bandpass', style=styleB, title='BandPass'),
+                    html.Button('S', id='smooth', style=styleB, title='Smooth'),
+                    html.Button('ABS', id='absolute', style=styleB, title='Module')]
                 ),
                 html.Div(
                     [dcc.Input(id='PreProcessing',
@@ -234,10 +322,10 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                     html.Button('Pre-Processing', id='preprocess', style=styleB)]
                 ),
                 html.Div([
-                    html.Button('Amplitude (A)', id='Amp', value='', style=styleB, title='Amplitude'),
-                    html.Button('1st Derivative (D)', id='diff1', style=styleB, title='1st Derivative'),
-                    html.Button('2nd Derivative (C)', id='diff2', style=styleB, title='2nd Derivative'),
-                    html.Button('RiseAmp (R)', id='riseamp', style=styleB, title='RiseAmp')]
+                    html.Button('A', id='Amp', value='', style=styleB, title='Amplitude'),
+                    html.Button('1D', id='diff1', style=styleB, title='1st Derivative'),
+                    html.Button('2D', id='diff2', style=styleB, title='2nd Derivative'),
+                    html.Button('RA', id='riseamp', style=styleB, title='RiseAmp')]
                 ),
                 html.Div(dcc.Input(id='SCtext',
                     placeholder='Enter Symbolic Methods',
@@ -395,13 +483,6 @@ def RegexParser(regex, string, n_clicks, data):
             matchInitial=[]
             matchFinal = []
 
-            # print(len(string))
-            # print(len(data['data']['data'][0]['x']))
-            # print("2 data")
-            # print(data)
-            # print(len(string))
-            # print(len(data['data']['data'][0]['y']))
-
             regit = re.finditer(regex,string)
 
             for i in regit:
@@ -409,23 +490,10 @@ def RegexParser(regex, string, n_clicks, data):
                 matchFinal.append(int(i.span()[1]))
 
 
-
-            # print(matchInitial)
-            # print(matchFinal)
             matchInitial=np.array(matchInitial)
             matchFinal=np.array(matchFinal)
             datax = np.array(data['data']['data'][0]['x'])
             datay= np.array(data['data']['data'][0]['y'])
-            # print(matchInitial)
-            # print(len(datax))
-            # print(len(datay))
-            # print(np.size([matchInitial]))
-            # print(np.size([matchFinal]))
-            # print(datay[matchInitial])
-
-            # if(np.size(datay)>np.size(datax)): # para o caso das timevars, vx, vy, jerk , a, o datay> datax
-            #
-            #     datax.resize(len(datay))
 
             traces.append(go.Scatter( #match initial append
                 x=datax[matchInitial],
@@ -435,7 +503,7 @@ def RegexParser(regex, string, n_clicks, data):
                 opacity=0.7,
                 marker=dict(
                     size=10,
-                    color='green',
+                    color='#EAEBED',
                     line=dict(
                         width=2)
 
@@ -451,7 +519,7 @@ def RegexParser(regex, string, n_clicks, data):
                 opacity=0.7,
                 marker=dict(
                     size=10,
-                    color='red',
+                    color='#006989',
                     line=dict(
                         width=2)
 
@@ -464,7 +532,7 @@ def RegexParser(regex, string, n_clicks, data):
                 mode='lines',
                 line=dict(
                     color='black',
-                    width=1
+                    width=0.7
 
                 ),
                 name='Signal'
@@ -473,15 +541,18 @@ def RegexParser(regex, string, n_clicks, data):
             return {
                 'data': traces,
                 'layout': go.Layout(
-                    legend={'x': 0, 'y': 1},
                     hovermode='closest',
-                    shapes =DrawShapes(matchInitial,matchFinal,datax, datay)
+                    shapes =DrawShapes(matchInitial,matchFinal,datax, datay),
+                    autosize=True,
+                    xaxis=dict(ticks='', showgrid=False, zeroline=False),
+                    yaxis=dict(ticks='', showgrid=False, zeroline=False)
                 )}
+
         else:
             return {
                 'data': data,
                 'layout': go.Layout(
-                    legend={'x': 0, 'y': 1},
+                    # legend={'x': 0, 'y': 1},
                     hovermode='closest',
                 )
             }
@@ -490,7 +561,7 @@ def RegexParser(regex, string, n_clicks, data):
         return {
             'data': data,
             'layout': go.Layout(
-                legend={'x': 0, 'y': 1},
+                # legend={'x': 0, 'y': 1},
                 hovermode='closest',
             )
         }
@@ -538,9 +609,7 @@ def SymbolicConnotationStringParser(n_clicks, parse, data):
     global lastclick1
     finalString=[]
 
-    # print('data size')
-    # print(len(data['data']['data'][0]['y']))
-    # print(data['data']['data']['x'])
+
     if (n_clicks != None):
 
         if(n_clicks>lastclick1): # para fazer com que o graf so se altere quando clicamos no botao e nao devido aos outros callbacks-grafico ou input box
@@ -566,11 +635,6 @@ def SymbolicConnotationStringParser(n_clicks, parse, data):
 
             finalString=merge_chars(np.array(finalString))  # esta a dar um erro estranho quando escrevo a caixa--FIXED
         lastclick1 = n_clicks
-
-    # print('string size')
-    # print(len(finalString))
-    # print(len(data['data']['data'][0]['y']))
-
 
     return finalString
 
@@ -616,11 +680,11 @@ def PreProcessStringParser(n_clicks, data, parse):
     return {
         'data': data,
         'layout': go.Layout(
-            xaxis=dict(ticks='', showgrid=False, zeroline=False, nticks=20),
-            yaxis=dict(ticks='', showgrid=False, zeroline=False, nticks=20),
-            autosize=True,
+            xaxis=dict(ticks='', showgrid=False, zeroline=False, domain=[0, 1] ),
+            yaxis=dict(ticks='', showgrid=False, zeroline=False, domain=[0, 1]),
+            # autosize=True,
             hovermode='closest',
-        )
+            )
         }
 
 @app.callback(
@@ -662,37 +726,6 @@ def PreProcessingWrite(b1,b2,b3,b4,b5, finalStr):
     return finalStr
 
 
-def UpdateTimeVarGraph(traces, selected_option):
-    if (str(selected_option) in ("vt, vx, vy, a, jerk")):
-
-        traces.append(go.Scatter(
-            x=time_var['ttv'],
-            y=time_var[selected_option],
-            text=selected_option,
-            opacity=0.7,
-            # marker={
-            #     'size': 5,
-            #     'line': {'width': 0.5, 'color': 'white'}
-            # },
-            line={'width': 2},
-            name=str(selected_option)
-        ))
-    elif (str(selected_option) in ("xt, yt")):
-        # print(str(selected_option))
-        traces.append(go.Scatter(
-            x=time_var['tt'],
-            y=time_var[str(selected_option)],
-            text=selected_option,
-            opacity=0.7,
-            # marker={
-            #     'size': 5,
-            #     'line': {'width': 0.5, 'color': 'white'}
-            # },
-            line={'width': 2},
-            name=str(selected_option)
-        ))
-
-    return traces
 
 @app.callback(
     dash.dependencies.Output('timevar_graph', 'figure'),
@@ -700,39 +733,21 @@ def UpdateTimeVarGraph(traces, selected_option):
 def update_timevarfigure(selected_option):
 
     traces=[]
-    # print(np.size(selected_option))
-    # print(len(selected_option))
+
     if(len(selected_option) == 1):
 
         traces = UpdateTimeVarGraph(traces, selected_option[0])
+        layout= createLayoutTimevar(selected_option[0])
 
     if (len(selected_option)>1):
          for i in range(np.size(selected_option)):
             traces = UpdateTimeVarGraph(traces, selected_option[i])
+         layout=createLayoutTimevar(selected_option[0])
 
     return {
         'data':traces,
-        'layout': go.Layout(
-            xaxis={'title': 'Time'},
-            yaxis={'title': selected_option},
-            legend={'x': 0, 'y': 1},
-            hovermode='closest'
-        )}
-
-    #     traces=[]
-    #     traces.append(go.Scatter(
-    #           x=time_var['ttv'],
-    #            y=time_var[str(selected_option)],
-    #            text=selected_option[0],
-    #            opacity=0.7,
-    #            # marker={
-    #            #     'size': 5,
-    #            #     'line': {'width': 0.5, 'color': 'white'}
-    #            # },
-    #            line= {'width': 2, 'color': 'black'},
-    #            name=str(selected_option)
-    #                 ))
-
+        'layout': layout
+    }
 
 @app.callback(
     dash.dependencies.Output('PosGraph', 'figure'),
@@ -743,12 +758,9 @@ def update_timevarfigure(selected_option):
      # dash.dependencies.Input('sliderpos', 'value')
      ])
 def interpolate_graf(value, json_data, timevar):
-    # print(len(MouseDict['t']))
-    # print(len(time_var['ttv']))
 
     matches = json.loads(json_data)
     timevar=json.loads(timevar)
-    print(timevar)
 
     matchInitial = matches['matchInitial']
     matchFinal = matches['matchFinal']
@@ -770,6 +782,27 @@ def interpolate_graf(value, json_data, timevar):
                 )
 
             ))
+            layout= go.Layout(
+                title='Positional Map',
+                xaxis=dict(
+                    title='X Axis',
+                    titlefont=dict(
+                        family='Courier New, monospace',
+                        size=14,
+                        color='#7f7f7f'
+                    ),
+                    ticks='', showgrid=False, zeroline=False),
+                yaxis=dict(
+                    title='Y Axis',
+                    titlefont=dict(
+                        family='Courier New, monospace',
+                        size=14,
+                        color='#7f7f7f'
+                    ),
+                    ticks='', showgrid=False, zeroline=False),
+                autosize=True,
+                hovermode='closest',
+            )
 
         if(value[i]=='interpolate'):
             traces.append(go.Scatter(
@@ -784,6 +817,27 @@ def interpolate_graf(value, json_data, timevar):
                 line={'width': 2, 'color': 'black'},
                 name="Interpolated Position"
             ))
+            layout = go.Layout(
+                title='Interpolated Map',
+                xaxis=dict(
+                    title='X Axis',
+                    titlefont=dict(
+                        family='Courier New, monospace',
+                        size=14,
+                        color='#7f7f7f'
+                    ),
+                    ticks='', showgrid=False, zeroline=False),
+                yaxis=dict(
+                    title='Y Axis',
+                    titlefont=dict(
+                        family='Courier New, monospace',
+                        size=14,
+                        color='#7f7f7f'
+                    ),
+                    ticks='', showgrid=False, zeroline=False),
+                autosize=True,
+                hovermode='closest',
+            )
 
         if(value[i]=='heat'):
             x = space_var['xs']
@@ -809,15 +863,29 @@ def interpolate_graf(value, json_data, timevar):
                 autosize=True,
                 # width=600,
                 # height=550,
+                title='Heatmap',
                 xaxis=dict(
-                    domain=[0, 0.85],
+                    # domain=[0, 0.85],
                     showgrid=False,
-                    zeroline=False
+                    zeroline=False,
+                    title='X axis',
+                    titlefont=dict(
+                        family='Courier New, monospace',
+                        size=14,
+                        color='#7f7f7f'
+                    ),
                 ),
+
                 yaxis=dict(
-                    domain=[0, 0.85],
+                    # domain=[0, 0.85],
                     showgrid=False,
-                    zeroline=False
+                    zeroline=False,
+                    title='Y Axis',
+                    titlefont=dict(
+                        family='Courier New, monospace',
+                        size=14,
+                        color='#7f7f7f'
+                    ),
                 ),
                 margin=dict(
                     t=50
@@ -848,14 +916,13 @@ def interpolate_graf(value, json_data, timevar):
                 line={'width': 2, 'color': 'black'},
                 name="Interpolated Position"
             ))
-            # print(len(time_var['tt']))
-            # print(len(time_var['ttv']))
+
 
 
 
 
     if(np.size(matches['matchInitial'])>0):
-        # print(len(space_var['xs']))
+
         lista_matches=[]
 
         for i in range(len(matchInitial)):
@@ -868,7 +935,6 @@ def interpolate_graf(value, json_data, timevar):
         #     valor_time=time_var['ttv'][lista_matches[i]]
         #     nova_lista.append(MouseDict['t'].index(time_var['ttv'][lista_matches[i]]))
 
-        print(timevar)
         time_array=np.array(MouseDict['t'])
         listA=["vt", "vx", "vy", "a", "jerk"]
         listB=["xt", "yt"]
@@ -912,172 +978,14 @@ def interpolate_graf(value, json_data, timevar):
             #     'size': 5,
             #     'line': {'width': 0.5, 'color': 'white'}
             # },
-            marker={'size': 5, 'color': 'red'},
+            marker={'size': 5, 'color': '#A7CCED'},
             name="Matches"
         ))
 
-
-
-
-
-
-    # if(value=='XY'):
-    #     # traces = []
-    #     traces.append(go.Scatter(
-    #             y=MouseDict['y'],
-    #             x=MouseDict['x'],
-    #             name='Position',
-    #             mode='markers',
-    #             opacity=0.7,
-    #             marker=dict(
-    #                 size=5,
-    #                 color='white',
-    #                 line=dict(
-    #                     width=1)
-    #             )
-    #
-    #         ))
-    #         # print(matches) #aparecer as matches no posgraph
-    #         # if (len(matches[0]) != 0):
-    #         #     traces.append(go.Scatter(
-    #         #         y=space_var['ys'][matches[0]:],
-    #         #         x=space_var['xs'][matches[0]:],
-    #         #         name='Position',
-    #         #         mode='markers',
-    #         #         opacity=0.7,
-    #         #         marker=dict(
-    #         #             size=5,
-    #         #             color='black',
-    #         #             line=dict(
-    #         #                 width=1)
-    #         #             )
-    #         #         )
-    #         #     )
-    #
-    #             # MouseDict['x']=np.array(MouseDict['x'])
-    #         # MouseDict['y']=np.array(MouseDict['y'])
-    #         # traces.append(go.Scatter( #para por um slider que mostrava a evoluçao dos pontos no 1º graf
-    #         #     x=[MouseDict['x'][slider]],
-    #         #     y=[MouseDict['y'][slider]],
-    #         #     mode='markers'))
-    #         # return {
-    #         #     'data': traces,
-    #         #     'layout': go.Layout(
-    #         #         showlegend=True,
-    #         #         autosize=True,
-    #         #         xaxis={'title': 'X position'},
-    #         #         yaxis={'title': 'Y position'},
-    #         #         legend={'x': 'X', 'y': 'Y'},
-    #         #         hovermode='closest'
-    #         #     )
-    #         # }
-    #
-    #     if (value== 'interpolate'): #1ª vez n_clicks== None
-    #         traces = []
-    #         traces.append(go.Scatter(
-    #             x=space_var['xs'],
-    #             y=space_var['ys'],
-    #             #text=selected_option[0],
-    #             opacity=0.7,
-    #             # marker={
-    #             #     'size': 5,
-    #             #     'line': {'width': 0.5, 'color': 'white'}
-    #             # },
-    #             line={'width': 2, 'color': 'black'},
-    #             name="Interpolated Position"
-    #         ))
-    #
-    #     return {
-    #             'data': traces,
-    #             'layout': go.Layout(
-    #                 showlegend=True,
-    #                 autosize=True,
-    #                 xaxis={'title': 'X position Interpolated'},
-    #                 yaxis={'title': 'Y position Interpolated'},
-    #                 legend={'x': 0, 'y': 1},
-    #                 hovermode='closest'
-    #                 )
-    #             }
-    # if(value=='heat'):
-    #     x=space_var['xs']
-    #     y=space_var['ys']
-    #     colorscale = ['#7A4579', '#D56073', 'rgb(236,158,105)', (1, 1, 0.2), (0.98, 0.98, 0.98)]
-    #     # traces=[
-    #
-    #     trace1 = go.Scatter(
-    #         x=x,
-    #         y=y,
-    #         mode='markers',
-    #         name='Point Position',
-    #         marker=dict(color='rgb(102,0,0)', size=5, opacity=0.4)
-    #     )
-    #     trace2 = go.Histogram2dcontour(
-    #         x=x,
-    #         y=y,
-    #         name='Position Density',
-    #         ncontours=20,
-    #         colorscale='Hot',
-    #         reversescale=True,
-    #         showscale=False
-    #     )
-    #
-    #     data = [trace1, trace2]
-    #
-    #     layout = go.Layout(
-    #         showlegend=True,
-    #         autosize=True,
-    #         # width=600,
-    #         # height=550,
-    #         xaxis=dict(
-    #             domain=[0, 0.85],
-    #             showgrid=False,
-    #             zeroline=False
-    #         ),
-    #         yaxis=dict(
-    #             domain=[0, 0.85],
-    #             showgrid=False,
-    #             zeroline=False
-    #         ),
-    #         margin=dict(
-    #             t=50
-    #         ),
-    #         hovermode='closest',
-    #         bargap=0,
-    #         xaxis2=dict(
-    #             domain=[0.85, 1],
-    #             showgrid=False,
-    #             zeroline=False
-    #         ),
-    #         yaxis2=dict(
-    #             domain=[0.85, 1],
-    #             showgrid=False,
-    #             zeroline=False
-    #         )
-    #     )
-    #         # go.Histogram2d(x=x, y=y, nao interessa
-    #         #                 #colorscale='YIGnBu',
-    #         #                 zmax=10,
-    #         #                 nbinsx=50,
-    #         #                 nbinsy=50,
-    #         #                 zauto=False)]
-    #     return {
-    #         'data': data,
-    #         'layout': go.Layout(
-    #             xaxis=dict(ticks='', showgrid=False, zeroline=False, nticks=20),
-    #             yaxis=dict(ticks='', showgrid=False, zeroline=False, nticks=20),
-    #             autosize=True,
-    #             hovermode='closest',
-    #             )
-    #         }
     return {
             'data': traces,
-            'layout': go.Layout(
-                xaxis=dict(ticks='', showgrid=False, zeroline=False, nticks=20),
-                yaxis=dict(ticks='', showgrid=False, zeroline=False, nticks=20),
-                autosize=True,
-                hovermode='closest',
-                )
-            }
+            'layout': layout
+    }
 
 
 @app.callback(dash.dependencies.Output('text_spacevar', 'children'),
