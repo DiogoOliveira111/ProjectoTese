@@ -17,6 +17,7 @@ import pandas as pd
 from ProcessingMethods import smooth, lowpass, highpass, bandpass
 from SymbolicMethods import DiffC, Diff2C, RiseAmp, AmpC
 from AuxiliaryMethods import _plot, detect_peaks,merge_chars
+import base64
 
 traces =[]
 preva1= 0
@@ -81,11 +82,14 @@ app.config['suppress_callback_exceptions']=True
 # app.scripts.config.serve_locally = True #no idea what this does
 # app.config.supress_callback_exceptions=True
 
+image_filename = 'logo_libphys.png' # replace with your own image
+encoded_image = base64.b64encode(open(image_filename, 'rb').read())
+
 
 #-----------------------------
 #Style Buttons
 #-----------------------------
-styleB = {'margin-top':'15px', 'margin-left':'5px', 'margin-right':'5px', 'margin-bottom':'15px'}
+styleB = {'margin-top':'7px', 'margin-left':'5px', 'margin-right':'5px', 'margin-bottom':'7px'}
 # margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
 colors = {
     'background': '#FFFFFF',
@@ -238,7 +242,7 @@ Div_XY_checklist=dcc.Checklist(
         {'label': 'Positional Map', 'value': 'XY'},
         {'label': 'Heatmap', 'value': 'heat'},
         {'label': 'Interpolate', 'value': 'interpolate'},
-        {'label': 'Test', 'value': 'test'}
+        # {'label': 'Test', 'value': 'test'}
     ],
     values=['XY'],
     style={'display':'inline-block', 'width':'100%'})
@@ -262,15 +266,31 @@ Div_S = dcc.Graph(id='regexgraph', style={'display': 'none', 'width':'100%' })
 
 
 app.layout = html.Div(style={'backgroundColor': colors['background']}, children=[
+    html.Img(src='data:image/png;base64,{}'.format(encoded_image.decode()),
+             style={ 'width': '270px',
+                     'height': '140px',
+                     'align' :'left',
+                    'margin-left':'5px',
+                     'margin-right' : '20px',
+                     'margin-top':'10px',
+                     # 'margin-bottom'
+
+                     # 'display': 'inline-block'
+                     }
+             ),
+
     html.H1(
         children='Symbolic Search in Web Monitoring Data',
         style={
             'textAlign': 'center',
-            'color': colors['text']
+            'color': colors['text'],
+            'display': 'inline-block',
+            'float':'middle',
+            'vertical-align':'text-middle'
         }
     ),
 
-    html.Div(children='Dash: A web application framework for Python.'),
+    # html.Div(children='Dash: A web application framework for Python.'),
 
     html.Div(
         children= [
@@ -282,7 +302,7 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                             {'label': 'Mouse Movement', 'value': 'XY'},
                             {'label': 'Pre-Processing', 'value': 'PP'},
                             {'label': 'Symbolic Connotation', 'value': 'SC'},
-                            {'label': 'Search', 'value': 'S'}
+                            # {'label': 'Search', 'value': 'S'}
                         ],
 
                         value='XY',
@@ -307,6 +327,21 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                        })]),
 
             html.Div(children=[
+                html.H4(
+                        children='Pre-Processing Step',
+                        style={
+                            'textAlign': 'center',
+                            'color': '#4C6684',
+                            'display': 'inline-block',
+                            'align':'center',
+                            # 'vertical-align':'text-middle',
+                            'margin-top':'7px',
+                            'margin-left':'5px',
+                            'margin-right':'5px',
+                            'margin-bottom':'7px'
+
+                        }
+                    ),
                 html.Div([
                     html.Button('H', id='highpass', value='', style=styleB, title='HighPass'),
                     html.Button('L', id='lowpass', style=styleB, title='LowPass'),
@@ -321,6 +356,20 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                                value=''),
                     html.Button('Pre-Processing', id='preprocess', style=styleB)]
                 ),
+                html.H4(children='Symbolic Connotation Step',
+                        style={
+                            'textAlign': 'center',
+                            'color': '#4C6684',
+                            'display': 'inline-block',
+                            'align':'left',
+                            'vertical-align':'text-middle',
+                            'margin-top':'7px',
+                            'margin-left':'5px',
+                            'margin-right':'5px',
+                            'margin-bottom':'7px'
+
+                        }
+                    ),
                 html.Div([
                     html.Button('A', id='Amp', value='', style=styleB, title='Amplitude'),
                     html.Button('1D', id='diff1', style=styleB, title='1st Derivative'),
@@ -339,8 +388,25 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                     dcc.Textarea(
                     id="SCtest",
                     placeholder='Your symbolic series will appear here.',
-                    value='',)
+                    value='',
+                    # style={'margin-bottom':'7px'}
+                    )
                 ),
+                html.H4(children='Search Step',
+                        style={
+                            'textAlign': 'left',
+                            'color': '#4C6684',
+                            # 'display': 'inline-block',
+                            'align':'left',
+                            'vertical-align':'text-middle',
+                            'margin-top':'7px',
+                            'margin-left':'5px',
+                            'margin-right':'5px',
+                            'margin-bottom':'7px'
+
+                        }
+                    ),
+
                 html.Div([
                         dcc.Input(id='regex',
                         placeholder='Enter Regular Expression...',
@@ -651,6 +717,9 @@ def PreProcessStringParser(n_clicks, data, parse):
     global lastclick
     if (n_clicks != None):
         if(n_clicks>lastclick): # para fazer com que o graf so se altere quando clicamos no botao e nao devido aos outros callbacks-grafico ou input box
+            maxTime=max(data['data'][0]['x'])
+            lengthOfSeries=len(data['data'][0]['x'])
+            fs=int(1/(maxTime/lengthOfSeries))
             CutString=parse.split()
             for i in range(len(CutString)): #estava range(len(CutString)-1 for some reason antes
                 if(CutString[i] =='H'):
@@ -733,6 +802,7 @@ def PreProcessingWrite(b1,b2,b3,b4,b5, finalStr):
 def update_timevarfigure(selected_option):
 
     traces=[]
+    layout={}
 
     if(len(selected_option) == 1):
 
