@@ -79,7 +79,7 @@ def lowpass(s, f, order=2, fs=1000.0, use_filtfilt=True):
     signal: array-like
     filtered signal
     """
-    b, a = signal.butter(order, f / (fs / 2))
+    b, a = signal.butter(order, f / (fs * 0.5))
 
     if use_filtfilt:
         return filtfilt(b, a, s)
@@ -105,7 +105,7 @@ def highpass(s, f, order=2, fs=1000.0, use_filtfilt=True):
     filtered signal
     """
 
-    b, a = signal.butter(order, f * 2 / (fs / 2), btype='highpass')
+    b, a = signal.butter(order, f  / (fs *0.5), btype='highpass') #estava (f*2)/(fs/2) na freq de corte
     if use_filtfilt:
         return filtfilt(b, a, s)
 

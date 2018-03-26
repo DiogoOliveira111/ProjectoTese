@@ -273,7 +273,8 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                     'margin-left':'5px',
                      'margin-right' : '20px',
                      'margin-top':'10px',
-                     # 'margin-bottom'
+                      'margin-bottom': '15px',
+                     'float': 'right'
 
                      # 'display': 'inline-block'
                      }
@@ -285,7 +286,7 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
             'textAlign': 'center',
             'color': colors['text'],
             'display': 'inline-block',
-            'float':'middle',
+            'float':'left',
             'vertical-align':'text-middle'
         }
     ),
@@ -444,7 +445,13 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
         )
     ], style={'display':'inline-block', 'width':'100%'}),
     html.Div(id='hiddenDiv', style={'display':'none'}),
-    html.Div(id='hiddenDiv_timevar', style={'display':'none'})
+    html.Div(id='hiddenDiv_timevar', style={'display':'none'}),
+    html.Div([
+        html.Button('Show Space Vars', id='showSpaceVar'),
+        dcc.Markdown(id ='text_spacevar')]
+
+
+    )
 ])
 
 #------------------------------------------------------
@@ -511,7 +518,7 @@ def updateHiddenDiv(regex, string, n_clicks):
     global lastclick2
     matches={"matchInitial":[], "matchFinal":[]}
     if (n_clicks != None):
-        if (n_clicks > lastclick2):
+        if (n_clicks > lastclick2 and len(string)>0):
             matchInitial = []
             matchFinal = []
             regit = re.finditer(regex, string)
@@ -541,7 +548,7 @@ def RegexParser(regex, string, n_clicks, data):
     global lastclick2
 
     if (n_clicks != None):
-        if(n_clicks>lastclick2):
+        if(n_clicks>lastclick2 and len(string)>0):
             str=numpy.asarray(string)
             matches = []
             traces=[]
@@ -562,8 +569,8 @@ def RegexParser(regex, string, n_clicks, data):
             datay= np.array(data['data']['data'][0]['y'])
 
             traces.append(go.Scatter( #match initial append
-                x=datax[matchInitial],
-                y=datay[matchInitial],
+                x=datax[matchInitial-1],
+                y=datay[matchInitial-1],
                 # text=selected_option[0],
                 mode='markers',
                 opacity=0.7,
@@ -717,22 +724,29 @@ def PreProcessStringParser(n_clicks, data, parse):
     global lastclick
     if (n_clicks != None):
         if(n_clicks>lastclick): # para fazer com que o graf so se altere quando clicamos no botao e nao devido aos outros callbacks-grafico ou input box
-            maxTime=max(data['data'][0]['x'])
-            lengthOfSeries=len(data['data'][0]['x'])
-            fs=int(1/(maxTime/lengthOfSeries))
+
+            # maxTime=max(data['data'][0]['x'])
+            # lengthOfSeries=len(data['data'][0]['x'])
+            # fs=int(1/(maxTime/lengthOfSeries))
+
+            fs=[]
+            for i in range(len(data['data'][0]['x'])-1):
+                fs.append(1/(data['data'][0]['x'][1]-data['data'][0]['x'][0]))
+            fs=np.mean(fs)
+            print(fs)
             CutString=parse.split()
             for i in range(len(CutString)): #estava range(len(CutString)-1 for some reason antes
                 if(CutString[i] =='H'):
                     #Function Amplitude
-                    data['data'][0]['y']=highpass(data['data'][0]['y'],int(CutString[i+1])) #aplicar o filtro aos dados y
+                    data['data'][0]['y']=highpass(data['data'][0]['y'],int(CutString[i+1]), fs=fs) #aplicar o filtro aos dados y
 
                 elif(CutString[i] =='L'):
                     #Function Low Pass
-                    data['data'][0]['y']=lowpass(data['data'][0]['y'], int(CutString[i+1]))
+                    data['data'][0]['y']=lowpass(data['data'][0]['y'], int(CutString[i+1]), fs=fs)
 
                 elif (CutString[i] == 'BP'):
                     #Function Band Pass
-                    data['data'][0]['y']=bandpass(data['data'][0]['y'], int(CutString[i+1]), int(CutString[i+2]))
+                    data['data'][0]['y']=bandpass(data['data'][0]['y'], int(CutString[i+1]), int(CutString[i+2]), fs=fs)
 
                 elif (CutString[i] == 'S'):
                     #Function Smooth
@@ -836,6 +850,7 @@ def interpolate_graf(value, json_data, timevar):
     matchFinal = matches['matchFinal']
 
     traces=[]
+    layout=[]
     for i in range(len(value)):
         if(value[i]=='XY'):
             traces.append(go.Scatter(
@@ -1059,27 +1074,42 @@ def interpolate_graf(value, json_data, timevar):
 
 
 @app.callback(dash.dependencies.Output('text_spacevar', 'children'),
-              [dash.dependencies.Input('interpolate', 'n_clicks')])
+              [dash.dependencies.Input('showSpaceVar', 'n_clicks')])
 def display_spacevar(n_clicks):
     if(n_clicks!= None):
-        return "Length of strokes: [{0}, {1}] px/items/n" \
-                "Straightness: [{0}, {1}] px/px/n " \
-               "Jitter: [{4}]  /n" \
-                "Angles: [{5}, {6}] /n" \
-               "Angular Velocity (w): [{7}, {8}] /n"\
-                "Curvature: [{9}, {10}] /n".format(
-                str(round(min(space_var['l_strokes']),2)),
-                str(round(max(space_var['l_strokes']), 2)),
-                str(round(min(space_var['straightness']), 2)),
-                str(round(max(space_var['straightness']), 2)),
-                str(round(space_var['jitter'],3)),
-                str(round(min(space_var['angles']), 2)),
-                str(round(max(space_var['angles']), 2)),
-                str(round(min(space_var['w']), 2)),
-                str(round(max(space_var['w']), 2)),
-                str(round(min(space_var['curvatures']), 2)),
-                str(round(max(space_var['curvatures']), 2))
-                                                )
+        return '''OLA \n \
+               LEL'''
+     # str(round(min(space_var['l_strokes']),2))
+        # * str(round(max(space_var['l_strokes']), 2)),
+        # * str(round(min(space_var['straightness']), 2)),
+        # * str(round(max(space_var['straightness']), 2)),
+        # * str(round(space_var['jitter'],3)),
+        # * str(round(min(space_var['angles']), 2)),
+        # * str(round(max(space_var['angles']), 2)),
+        # * str(round(min(space_var['w']), 2)),
+        # * str(round(max(space_var['w']), 2)),
+        # * str(round(min(space_var['curvatures']), 2)),
+        # * str(round(max(space_var['curvatures']), 2))
+        #
+        # '''
+            # "Length of strokes: [{0}, {1}] px/items/n" \
+            #     "Straightness: [{0}, {1}] px/px/n " \
+            #    "Jitter: [{4}]  /n" \
+            #     "Angles: [{5}, {6}] /n" \
+            #    "Angular Velocity (w): [{7}, {8}] /n"\
+            #     "Curvature: [{9}, {10}] /n".format(
+            #     str(round(min(space_var['l_strokes']),2)),
+            #     str(round(max(space_var['l_strokes']), 2)),
+            #     str(round(min(space_var['straightness']), 2)),
+            #     str(round(max(space_var['straightness']), 2)),
+            #     str(round(space_var['jitter'],3)),
+            #     str(round(min(space_var['angles']), 2)),
+            #     str(round(max(space_var['angles']), 2)),
+            #     str(round(min(space_var['w']), 2)),
+            #     str(round(max(space_var['w']), 2)),
+            #     str(round(min(space_var['curvatures']), 2)),
+            #     str(round(max(space_var['curvatures']), 2))
+            #                                     )
 
 
         #        +"Straightness: ["+ str(round(min(space_var['straightness']),2)) + ","+ str(round(max(space_var['straightness']),2))+"]/n    " \
