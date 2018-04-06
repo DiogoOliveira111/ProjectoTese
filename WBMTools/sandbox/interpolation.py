@@ -88,6 +88,10 @@ def interpolate_data(track_variables, t_abandon, t_crop=pl.Inf, begin=0, end=-1)
 	min_s = min(ds)
 	dig_int_s = round_dig(min_s)
 	interp_s = round(min_s, dig_int_s)
+	# print(_s[-1] / interp_s)
+	if _s[-1] / interp_s > 200000000:  # 200000000 memory error - foi posto agora porque estava a dar mal para vectores grandes
+		interp_s = _s[-1] / 200000000
+	# print(interp_s)
 
 	# find pauses
 	# i_inter = list(find(diff(t) <= 1))

@@ -38,47 +38,53 @@ lastclick1=0
 lastclick2=0
 finalStr=""
 
-path = easygui.fileopenbox()
-
-with open(path, 'rb') as handle:
-    collection= pickle.load(handle)
-
-
+# path = easygui.fileopenbox()
+#
+# with open(path, 'rb') as handle:
+#     collection= pickle.load(handle)
+#
+#
 flag=0
 MouseTime=[]
 MouseX=[]
 MouseY=[]
-
-for i in collection:
-
-    event=collection[i]
-    if( event['Type']=='Mouse'):
-        data=event['Data'].split(';')
-        if (i==0):
-            initial_time = float(data[-1]) #nao devia ser 0 em vez de -1?
-            MouseTime.append(initial_time/1000)
-        else:
-            MouseTime.append((float(data[-1]) - initial_time) / 1000)
-        MouseX.append(float(data[2]))
-        MouseY.append(float(data[3]))
-        flag=1 #Flag to determine if there is Mouse data in the collection
-
-    if(flag==0):
-        root= Tk()
-
-        # Make window 300x150 and place at position (50,50)
-        root.geometry("600x300+50+50")
-
-        # Create a label as a child of root window
-        my_text = Label(root, text='The Collection chosen has no Mouse Data')
-        my_text.pack()
-        root.mainloop()
-        exit()
-
-MouseDict = dict(t=MouseTime, x=MouseX, y=MouseY)
-dM = pd.DataFrame.from_dict(MouseDict)
-time_var,space_var=interpolate_data(dM,t_abandon=20)
-vars={'time_var': time_var, 'space_var': space_var}
+MouseDict={'x' : 'None', 'y' :'None'
+}
+# #
+# for i in collection:
+#
+#     event=collection[i]
+#     if( event['Type']=='Mouse'):
+#         data=event['Data'].split(';')
+#         if (i==0):
+#             initial_time = float(data[-1]) #nao devia ser 0 em vez de -1?
+#             MouseTime.append(initial_time/1000)
+#         else:
+#             MouseTime.append((float(data[-1]) - initial_time) / 1000)
+#         MouseX.append(float(data[2]))
+#         MouseY.append(float(data[3]))
+#         flag=1 #Flag to determine if there is Mouse data in the collection
+#
+#     if(flag==0):
+#         root= Tk()
+#
+#         # Make window 300x150 and place at position (50,50)
+#         root.geometry("600x300+50+50")
+#
+#         # Create a label as a child of root window
+#         my_text = Label(root, text='The Collection chosen has no Mouse Data')
+#         my_text.pack()
+#         root.mainloop()
+#         exit()
+#
+# MouseDict = dict(t=MouseTime, x=MouseX, y=MouseY)
+# dM = pd.DataFrame.from_dict(MouseDict)
+# time_var,space_var=interpolate_data(dM,t_abandon=20)
+# vars={'time_var': time_var, 'space_var': space_var}
+# print(space_var['l_strokes'])
+# print(space_var['straightness'])
+# print(space_var['jitter'])
+#
 
 app = dash.Dash()
 app.config['suppress_callback_exceptions']=True
@@ -127,6 +133,7 @@ def DrawShapes(matchInitial, matchFinal, datax, datay):
 
 
 def UpdateTimeVarGraph(traces, selected_option):
+    global time_var
     if (str(selected_option) in ("vt, vx, vy, a, jerk")):
 
         traces.append(go.Scatter(
@@ -322,6 +329,7 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
 
             html.Div(
                 [html.Div(children=[
+                    Div_Upload,
                     dcc.Tabs(
                         tabs=[
                             {'label': 'Mouse Movement', 'value': 'XY'},
@@ -333,12 +341,13 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                         value='XY',
                         id='tabs'
                     ),
+
                     html.Div(id='tab-output'
                              , children=[
                             html.Div([
                                 Div_XY,
                                 Div_XY_checklist,
-                                Div_Upload,
+
 
                                 Div_XY_interpolate,
                                 Div_PP,
@@ -474,6 +483,7 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
     html.Div(dt.DataTable(rows=[{}]), style={'display': 'none'}),
     html.Div(id='hiddenDiv', style={'display':'none'}),
     html.Div(id='hiddenDiv_timevar', style={'display':'none'}),
+    html.Div(id='hiddenDiv_Dictionary', style={'display':'none'}),
     html.Div([
         html.Button('Show Space Vars', id='showSpaceVar'),
         dcc.Markdown(id ='text_spacevar')]
@@ -485,6 +495,42 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
 #------------------------------------------------------
 #   Callback Functions
 #-----------------------------------------------------
+def createDictionary(df):
+    global time_var, space_var
+    global MouseDict
+    MouseX=[]
+    MouseY = []
+    MouseTime = []
+    vars={}
+
+    print(len(df[3]))
+    MouseX=df[3]
+    # x = [d for d in x if re.match('\d+', d)]  # procura na lista os que sao numeros, para retirar os undefined
+    # MouseX = np.array(x).astype(int)  # converte string para int, so é preciso isto se o ficheiro tiver undefineds
+
+
+    MouseY=df[4]
+    # y = [d for d in y if re.match('\d+', d)]  # procura na lista os que sao numeros, para retirar os undefined
+    # MouseY= np.array(y).astype(int)
+    # print(MouseY)
+    for i in range(len(df[11])):
+        if i==0:
+            initial_time=df[11][0]/1000
+            MouseTime.append(0)
+        else:
+            MouseTime.append((df[11][i]/1000)-initial_time)
+    MouseTime=MouseTime
+    # print(numpy.isnan(MouseX).any())
+
+    print(len(MouseX))
+
+    MouseDict = dict(t=MouseTime, x=MouseX, y=MouseY)
+    dM = pd.DataFrame.from_dict(MouseDict)
+    time_var, space_var = interpolate_data(dM, t_abandon=20)
+    vars = {'time_var': time_var, 'space_var': space_var}
+    # print(vars)
+
+
 def parse_contents(contents, filename, date):
     # print(contents)
     content_type, content_string = contents.split(',')
@@ -492,23 +538,26 @@ def parse_contents(contents, filename, date):
     # print(content_string)
     decoded = base64.b64decode(content_string)
     # print(decoded)
-    try:
+    # try:
         # if 'csv' in filename:
             # Assume that the user uploaded a CSV file
 
-            df = pd.read_csv(
-                io.StringIO(decoded.decode('utf-8')), delimiter='\t', header=None, names = ["N", "ID", "Type", "Xpos", "Ypos", 1, 2,3,4,5,6,7]
-            )
-        # elif 'xls' in filename:
-
+    df = pd.read_csv(
+        io.StringIO(decoded.decode('utf-8')), delimiter='\t', header=None,
+        # names = ["N", "ID", "Type", "Xpos", "Ypos", 1, 2,3,4,5,6,7]
+    )
+    df.sort_values(by=[0])
+# elif 'xls' in filename:
+    createDictionary(df)
             # Assume that the user uploaded an excel file
             # df = pd.read_excel(io.BytesIO(decoded))
 
-    except Exception as e:
-        print(e)
-        return html.Div([
-            'There was an error processing this file.'
-        ])
+
+    # except Exception as e:
+    #     print(e)
+    #     return html.Div([
+    #         'There was an error processing this file.'
+    #     ])
 
     return html.Div([
             html.H5(filename),
@@ -539,6 +588,7 @@ def uploadData(list_of_contents, list_of_names, list_of_dates):
         children = [
             parse_contents(c, n, d) for c, n, d in
             zip(list_of_contents, list_of_names, list_of_dates)]
+
         return children
 
 
@@ -925,7 +975,8 @@ def update_timevarfigure(selected_option):
      # dash.dependencies.Input('sliderpos', 'value')
      ])
 def interpolate_graf(value, json_data, timevar):
-
+    global MouseDict
+    global space_var
     matches = json.loads(json_data)
     timevar=json.loads(timevar)
 
