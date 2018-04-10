@@ -504,12 +504,13 @@ def createDictionary(df):
     vars={}
 
     print(len(df[3]))
-    MouseX=df[3]
+    MouseX=df[3][::7]
+
     # x = [d for d in x if re.match('\d+', d)]  # procura na lista os que sao numeros, para retirar os undefined
     # MouseX = np.array(x).astype(int)  # converte string para int, so é preciso isto se o ficheiro tiver undefineds
 
 
-    MouseY=df[4]
+    MouseY=df[4][::7]
     # y = [d for d in y if re.match('\d+', d)]  # procura na lista os que sao numeros, para retirar os undefined
     # MouseY= np.array(y).astype(int)
     # print(MouseY)
@@ -519,10 +520,14 @@ def createDictionary(df):
             MouseTime.append(0)
         else:
             MouseTime.append((df[11][i]/1000)-initial_time)
-    MouseTime=MouseTime
+    MouseTime=MouseTime[::7]
+
     # print(numpy.isnan(MouseX).any())
 
+    # mynewlist = [s for s in MouseX if s.isdigit()]
+
     print(len(MouseX))
+    # print(len(mynewlist))
 
     MouseDict = dict(t=MouseTime, x=MouseX, y=MouseY)
     dM = pd.DataFrame.from_dict(MouseDict)
@@ -701,38 +706,38 @@ def RegexParser(regex, string, n_clicks, data):
             matchFinal=np.array(matchFinal)
             datax = np.array(data['data']['data'][0]['x'])
             datay= np.array(data['data']['data'][0]['y'])
+            if (len(matchInitial)>0 and len(matchFinal)>0 ):
+                traces.append(go.Scatter( #match initial append
+                    x=datax[matchInitial-1],
+                    y=datay[matchInitial-1],
+                    # text=selected_option[0],
+                    mode='markers',
+                    opacity=0.7,
+                    marker=dict(
+                        size=10,
+                        color='#EAEBED',
+                        line=dict(
+                            width=2)
 
-            traces.append(go.Scatter( #match initial append
-                x=datax[matchInitial-1],
-                y=datay[matchInitial-1],
-                # text=selected_option[0],
-                mode='markers',
-                opacity=0.7,
-                marker=dict(
-                    size=10,
-                    color='#EAEBED',
-                    line=dict(
-                        width=2)
+                    ),
+                    name='Match Initial'
 
-                ),
-                name='Match Initial'
+                ))
+                traces.append(go.Scatter( #match final append
+                    x=datax[matchFinal-1], #porque -1 ?
+                    y=datay[matchFinal-1],
+                    # text=selected_option[0],
+                    mode='markers',
+                    opacity=0.7,
+                    marker=dict(
+                        size=10,
+                        color='#006989',
+                        line=dict(
+                            width=2)
 
-            ))
-            traces.append(go.Scatter( #match final append
-                x=datax[matchFinal-1], #porque -1 ?
-                y=datay[matchFinal-1],
-                # text=selected_option[0],
-                mode='markers',
-                opacity=0.7,
-                marker=dict(
-                    size=10,
-                    color='#006989',
-                    line=dict(
-                        width=2)
-
-                ),
-                name='Match Final'
-            ))
+                    ),
+                    name='Match Final'
+                ))
             traces.append(go.Scatter(
                 x=datax,
                 y=datay,
