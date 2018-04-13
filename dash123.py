@@ -385,13 +385,25 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                     html.Button('S', id='smooth', style=styleB, title='Smooth'),
                     html.Button('ABS', id='absolute', style=styleB, title='Module')]
                 ),
-                html.Div(
-                    [dcc.Input(id='PreProcessing',
+                html.Div(id ='PreProcessDiv', children=[
+                    dcc.Input(id='PreProcessing',
                                placeholder='Ex: "H 50 L 10"',
                                type='text',
                                value=''),
-                    html.Button('Pre-Processing', id='preprocess', style=styleB)]
-                ),
+                    dcc.Input(id='PreProcessing1',
+                               placeholder='Ex: "H 50 L 10"',
+                               type='text',
+                               value='',
+                              style= {'display': 'none'}),
+                    dcc.Input(id='PreProcessing2',
+                               placeholder='Ex: "H 50 L 10"',
+                               type='text',
+                               value='',
+                              style= {'display': 'none'}),
+
+                    ]),
+                html.Button('Pre-Processing', id='preprocess', style=styleB),
+
                 html.H4(children='Symbolic Connotation Step',
                         style={
                             'textAlign': 'center',
@@ -593,7 +605,7 @@ def uploadData(list_of_contents, list_of_names, list_of_dates):
         children = [
             parse_contents(c, n, d) for c, n, d in
             zip(list_of_contents, list_of_names, list_of_dates)]
-
+        # print(children)
         return children
 
 
@@ -856,11 +868,17 @@ def SymbolicConnotationStringParser(n_clicks, parse, data):
     dash.dependencies.Output('timevar_graph_PP', 'figure'),
     [dash.dependencies.Input('preprocess', 'n_clicks'),
     dash.dependencies.Input('timevar_graph', 'figure')],
-    [dash.dependencies.State('PreProcessing', 'value')]
+    [dash.dependencies.State('PreProcessing', 'value'),
+     dash.dependencies.State('PreProcessing1', 'value'),
+    dash.dependencies.State('PreProcessing2', 'value')
+     ]
 )
-def PreProcessStringParser(n_clicks, data, parse):
+def PreProcessStringParser(n_clicks, data, parse, parse2, parse3):
+
 
     global lastclick
+    print(parse2)
+    print(data)
     if (n_clicks != None):
         if(n_clicks>lastclick): # para fazer com que o graf so se altere quando clicamos no botao e nao devido aos outros callbacks-grafico ou input box
 
@@ -946,12 +964,70 @@ def PreProcessingWrite(b1,b2,b3,b4,b5, finalStr):
 
     return finalStr
 
+@app.callback(
+    dash.dependencies.Output('PreProcessing2', 'style'),
+    [dash.dependencies.Input('dropdown_timevar', 'value')]
+)
+def showPreProcess2(selected_option):
+    selected_option = np.array(selected_option)
+    if len(selected_option)>2:
+        return {'display': 'inline-block'}
+
+    else:
+        return {'display':'none'}
+
+
+@app.callback(
+    dash.dependencies.Output('PreProcessing1', 'style'),
+    [dash.dependencies.Input('dropdown_timevar', 'value')]
+)
+def showPreProcess1(selected_option):
+    selected_option = np.array(selected_option)
+    if len(selected_option)>1:
+        return {'display': 'inline-block'}
+
+    else:
+        return {'display':'none'}
+
+
+# @app.callback(
+#     dash.dependencies.Output('PreProcessDiv', 'children'),
+#     [dash.dependencies.Input('dropdown_timevar', 'value')]
+# )
+# def create_PP(selected_option):
+#     Div=""
+#
+#     selected_option=np.array(selected_option)
+#     print(len(selected_option))
+#
+#     for i in range(len(selected_option)):
+#         if(len(selected_option)==1):
+#             return html.Div( dcc.Input(id='PreProcessing',
+#                           placeholder='LEL',
+#                           type='text',
+#                           value='')
+#             )
+#         elif(len(selected_option)==2):
+#             print('hello')
+#             return html.Div([dcc.Input(id='PreProcessing',
+#                                       placeholder='LEL',
+#                                       type='text',
+#                                       value=''),
+#                             html.Hr(),
+#                             dcc.Input(id='PreProcessing1',
+#                                       placeholder='LEL',
+#                                       type='text',
+#                                       value='')
+#                             ])
+#
+
 
 
 @app.callback(
     dash.dependencies.Output('timevar_graph', 'figure'),
     [dash.dependencies.Input('dropdown_timevar', 'value')])
 def update_timevarfigure(selected_option):
+
 
     traces=[]
     layout={}
