@@ -424,21 +424,46 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                     html.Button('2D', id='diff2', style=styleB, title='2nd Derivative'),
                     html.Button('RA', id='riseamp', style=styleB, title='RiseAmp')]
                 ),
-                html.Div(dcc.Input(id='SCtext',
-                    placeholder='Enter Symbolic Methods',
-                    type='text',
-                    value='',
-                    # style={'display': 'none'}
-                )),
+                html.Div(id='SymbolicConnotationDiv', children= [
+                    dcc.Input(id='SCtext',
+                            placeholder='Enter Symbolic Methods',
+                            type='text',
+                            value='',
+                            # style={'display': 'none'}
+                            ),
+                    dcc.Input(id='SCtext1',
+                            placeholder='Enter Symbolic Methods',
+                            type='text',
+                            value='',
+                            style={'display': 'none'}
+                            ),
+                    dcc.Input(id='SCtext2',
+                            placeholder='Enter Symbolic Methods',
+                            type='text',
+                            value='',
+                            style={'display': 'none'}
+                            )
+                    ]
+                         ),
                 html.Div(
                     html.Button('Symbolic Connotation', id='SCbutton', style=styleB)),
-                html.Div(
-                    dcc.Textarea(
-                    id="SCtest",
-                    placeholder='Your symbolic series will appear here.',
-                    value='',
-                    # style={'margin-bottom':'7px'}
-                    )
+                html.Div(id='SCresultDiv', children=[
+                    dcc.Textarea(id="SCresult",
+                                placeholder='Your symbolic series will appear here.',
+                                value='',
+                                # style={'margin-bottom':'7px'}
+                                 ),
+                    dcc.Textarea(id="SCresult1",
+                                placeholder='Your symbolic series will appear here.',
+                                value='',
+                                style={'display':'none'}
+                                 ),
+                    dcc.Textarea(id="SCresult2",
+                                placeholder='Your symbolic series will appear here.',
+                                value='',
+                                style={'display':'none'}
+                                 ),
+                    ]
                 ),
                 html.H4(children='Search Step',
                         style={
@@ -651,6 +676,7 @@ def display_S(value):
         return {'display':'inline-block'}
     else:
         return {'display':'none'}
+
 @app.callback(
     dash.dependencies.Output('hiddenDiv_timevar', 'children'),
     [dash.dependencies.Input('dropdown_timevar', 'value')]
@@ -661,7 +687,7 @@ def updateTimeVar(value):
 @app.callback(
         dash.dependencies.Output('hiddenDiv', 'children'),
         [dash.dependencies.Input('regex', 'value'),
-         dash.dependencies.Input('SCtest', 'value'),
+         dash.dependencies.Input('SCresult', 'value'),
          dash.dependencies.Input('searchregex', 'n_clicks'),
          ]
     )
@@ -672,7 +698,7 @@ def updateHiddenDiv(regex, string, n_clicks):
         if (n_clicks > lastclick2 and len(string)>0):
             matchInitial = []
             matchFinal = []
-            regit = re.finditer(regex, string)
+            regit = re.finditer(regex, string[0]) #so esta a tratar o 1º sinal
 
             for i in regit:
                 matchInitial.append((int(i.span()[0])))
@@ -685,12 +711,42 @@ def updateHiddenDiv(regex, string, n_clicks):
 
 
     return json.dumps(matches, sort_keys=True)
+@app.callback( #TENHO DE POR O UPDATE PARA A HIDDEN DIV PARA DEPOIS VIR BUSCAR E POR NO OUTPUT
+    dash.dependencies.Output('SCresult1', 'value'),
+    [dash.dependencies.Input('')]
+)
+
+@app.callback(
+    dash.dependencies.Output('SCresult1', 'style'),
+    [dash.dependencies.Input('dropdown_timevar', 'value')]
+)
+def showtext1(selected_option):
+    selected_option = np.array(selected_option)
+    print(selected_option.size)
+    if selected_option.size>1:
+        print('yo')
+        return {'display': 'inline-block'}
+
+    else:
+        return {'display':'none'}
+
+@app.callback(
+    dash.dependencies.Output('SCresult2', 'style'),
+    [dash.dependencies.Input('dropdown_timevar', 'value')]
+)
+def showtext2(selected_option):
+    selected_option = np.array(selected_option)
+    if selected_option.size > 2:
+        return {'display': 'inline-block'}
+
+    else:
+        return {'display': 'none'}
 
 
 @app.callback(
     dash.dependencies.Output('regexgraph', 'figure'),
     [dash.dependencies.Input('regex', 'value'),
-     dash.dependencies.Input('SCtest', 'value'),
+     dash.dependencies.Input('SCresult', 'value'),
      dash.dependencies.Input('searchregex', 'n_clicks'),
      dash.dependencies.Input('timevar_graph_PP', 'figure')
      ]
@@ -700,14 +756,14 @@ def RegexParser(regex, string, n_clicks, data):
 
     if (n_clicks != None):
         if(n_clicks>lastclick2 and len(string)>0):
-            str=numpy.asarray(string)
+            str=numpy.asarray(string[0])
             matches = []
             traces=[]
 
             matchInitial=[]
             matchFinal = []
 
-            regit = re.finditer(regex,string)
+            regit = re.finditer(regex,string[0]) #so esta a tratar o 1º sinal
 
             for i in regit:
                 matchInitial.append((int(i.span()[0])))
@@ -790,6 +846,53 @@ def RegexParser(regex, string, n_clicks, data):
             )
         }
 
+@app.callback(
+    dash.dependencies.Output('SCtext1', 'style'),
+    [dash.dependencies.Input('dropdown_timevar', 'value')]
+)
+def showSC1(selected_option):
+    selected_option = np.array(selected_option)
+    if selected_option.size>1:
+        return {'display': 'inline-block'}
+
+    else:
+        return {'display':'none'}
+
+@app.callback(
+    dash.dependencies.Output('SCtext2', 'style'),
+    [dash.dependencies.Input('dropdown_timevar', 'value')]
+)
+def showSC1(selected_option):
+    selected_option = np.array(selected_option)
+    if selected_option.size>2:
+        return {'display': 'inline-block'}
+
+    else:
+        return {'display':'none'}
+
+def SCParser(parse, selector, data):
+    finalString = [[],[],[]]
+    for j in range(selector):
+
+        for i in range(len(parse[j])):
+
+            if (parse[j][i] == 'A'):
+                # function Amp
+                finalString[j].append(AmpC(data['data']['data'][j]['y'], float(parse[j][i + 1])))
+
+            elif (parse[j][i] == '1D'):
+                # Function 1st Derivative
+                finalString[j].append(DiffC(data['data']['data'][j]['y'], float(parse[j][i + 1])))
+
+            elif (parse[j][i] == '2D'):
+                # Function 2nd Derivative
+                finalString[j].append(Diff2C(data['data']['data'][j]['y'], float(parse[j][i + 1])))
+
+            elif (parse[j][i] == 'R'):
+                # Function RiseAmp
+                finalString[j].append(RiseAmp(data['data']['data'][j]['y'], float(parse[j][i + 1])))  # nao sei se esta a fazer bem
+        finalString[j] = merge_chars(np.array(finalString[j]))
+    return finalString
 
 @app.callback(
     dash.dependencies.Output('SCtext', 'value'),[
@@ -824,12 +927,16 @@ def SymbolicConnotationWrite(a1,a2,a3,a4, finalStr):
 
 #Nota: input dos dados processados e nao originais
 @app.callback(
-    dash.dependencies.Output('SCtest', 'value'),
+    dash.dependencies.Output('SCresult', 'value'),
     [dash.dependencies.Input('SCbutton', 'n_clicks'),
-    dash.dependencies.Input('SCtext', 'value'),
-    dash.dependencies.Input('timevar_graph_PP', 'figure')]
+    dash.dependencies.Input('timevar_graph_PP', 'figure')],
+    [dash.dependencies.State('SCtext', 'value'),
+     dash.dependencies.State('SCtext1', 'value'),
+    dash.dependencies.State('SCtext2', 'value'),
+    dash.dependencies.State('dropdown_timevar', 'value')
+     ]
 )
-def SymbolicConnotationStringParser(n_clicks, parse, data):
+def SymbolicConnotationStringParser(n_clicks, data, parse, parse1, parse2, time_Vars):
     global lastclick1
     finalString=[]
 
@@ -837,30 +944,68 @@ def SymbolicConnotationStringParser(n_clicks, parse, data):
     if (n_clicks != None):
 
         if(n_clicks>lastclick1): # para fazer com que o graf so se altere quando clicamos no botao e nao devido aos outros callbacks-grafico ou input box
-            CutString=parse.split()
-            for i in range(len(CutString)-1):
-                if(CutString[i] =='A'):
-                    #function Amp
-                    finalString.append(AmpC(data['data']['data'][0]['y'],float(CutString[i+1])))
 
-                elif(CutString[i] =='1D'):
-                    #Function 1st Derivative
-                    finalString.append( DiffC(data['data']['data'][0]['y'], float(CutString[i + 1])))
+            CutString = []
+            CutString.append(parse.split())
+            CutString.append(parse1.split())
+            CutString.append(parse2.split())
+            selector=len(time_Vars)
+            finalString=SCParser(CutString, selector, data)
 
-                elif (CutString[i] == '2D'):
-                    #Function 2nd Derivative
-                    finalString.append( Diff2C(data['data']['data'][0]['y'], float(CutString[i + 1])))
+            # for i in range(len(CutString)-1):
+            #     if(CutString[i] =='A'):
+            #         #function Amp
+            #         finalString.append(AmpC(data['data']['data'][0]['y'],float(CutString[i+1])))
+            #
+            #     elif(CutString[i] =='1D'):
+            #         #Function 1st Derivative
+            #         finalString.append( DiffC(data['data']['data'][0]['y'], float(CutString[i + 1])))
+            #
+            #     elif (CutString[i] == '2D'):
+            #         #Function 2nd Derivative
+            #         finalString.append( Diff2C(data['data']['data'][0]['y'], float(CutString[i + 1])))
+            #
+            #     elif (CutString[i] == 'R'):
+            #         #Function RiseAmp
+            #         finalString.append(RiseAmp(data['data']['data'][0]['y'], float(CutString[i + 1]))) #nao sei se esta a fazer bem
 
-                elif (CutString[i] == 'R'):
-                    #Function RiseAmp
-                    finalString.append(RiseAmp(data['data']['data'][0]['y'], float(CutString[i + 1]))) #nao sei se esta a fazer bem
+            print(finalString)
 
-
-
-            finalString=merge_chars(np.array(finalString))  # esta a dar um erro estranho quando escrevo a caixa--FIXED
+            # finalString=merge_chars(np.array(finalString))  # esta a dar um erro estranho quando escrevo a caixa--FIXED
         lastclick1 = n_clicks
 
     return finalString
+
+
+def PPProcessingParser(parse, selector, data, fs): #selector é para selecionar a variavel (time_var) a tratar
+
+    for j in range(selector):
+
+        for i in range(len(parse[j])):
+            # print(data['data'][j]['y'])
+            print(parse[j])
+            if (parse[j][i] == 'H'):
+                # Function Amplitude
+
+                data['data'][j]['y'] = highpass(data['data'][j]['y'], int(parse[j][i + 1]), fs=fs)  # aplicar o filtro aos dados y
+
+            elif (parse[j][i] == 'L'):
+                # Function Low Pass
+                data['data'][j]['y'] = lowpass(data['data'][j]['y'], int(parse[j][i + 1]), fs=fs)
+
+            elif (parse[j][i] == 'BP'):
+                # Function Band Pass
+                data['data'][j]['y'] = bandpass(data['data'][j]['y'], int(parse[j][i + 1]), int(parse[j][i + 2]), fs=fs)
+
+            elif (parse[j][i] == 'S'):
+                # Function Smooth
+                smooth_signal = smooth(np.array(data['data'][j]['y']), int(parse[j][i + 1]))  # estranho porque o smooth retorna uma lista com os dados na 1ªpos e o valor do smooth na segunda
+                data['data'][j]['y'] = smooth_signal
+
+            elif (parse[j][i] == 'ABS'):
+                # Function Absolute
+
+                data['data'][j]['y'] = np.absolute(data['data'][j]['y'])
 
 
 
@@ -870,15 +1015,17 @@ def SymbolicConnotationStringParser(n_clicks, parse, data):
     dash.dependencies.Input('timevar_graph', 'figure')],
     [dash.dependencies.State('PreProcessing', 'value'),
      dash.dependencies.State('PreProcessing1', 'value'),
-    dash.dependencies.State('PreProcessing2', 'value')
+    dash.dependencies.State('PreProcessing2', 'value'),
+    dash.dependencies.State('dropdown_timevar', 'value')
      ]
 )
-def PreProcessStringParser(n_clicks, data, parse, parse2, parse3):
+def PreProcessStringParser(n_clicks, data, parse, parse1, parse2, time_Vars):
 
 
     global lastclick
-    print(parse2)
-    print(data)
+    # print(parse2)
+    # print(data['data'][0])
+    # print(data['data'][1])
     if (n_clicks != None):
         if(n_clicks>lastclick): # para fazer com que o graf so se altere quando clicamos no botao e nao devido aos outros callbacks-grafico ou input box
 
@@ -889,30 +1036,39 @@ def PreProcessStringParser(n_clicks, data, parse, parse2, parse3):
             fs=[]
             for i in range(len(data['data'][0]['x'])-1):
                 fs.append(1/(data['data'][0]['x'][1]-data['data'][0]['x'][0]))
-            fs=np.mean(fs)
-            CutString=parse.split()
-            for i in range(len(CutString)): #estava range(len(CutString)-1 for some reason antes
-                if(CutString[i] =='H'):
-                    #Function Amplitude
-                    data['data'][0]['y']=highpass(data['data'][0]['y'],int(CutString[i+1]), fs=fs) #aplicar o filtro aos dados y
+            fs=np.mean(fs) #para calcular a taxa de amostragem de forma um bocado manhosa
+            CutString=[]
+            CutString.append(parse.split())
+            CutString.append(parse1.split())
+            CutString.append( parse2.split())
+            # print(CutString)
+            # print(CutString[0])
+            # print(CutString[1][1])
+            selector=len(time_Vars)
 
-                elif(CutString[i] =='L'):
-                    #Function Low Pass
-                    data['data'][0]['y']=lowpass(data['data'][0]['y'], int(CutString[i+1]), fs=fs)
+            PPProcessingParser(CutString, selector, data, fs) #para simplificar o codigo
 
-                elif (CutString[i] == 'BP'):
-                    #Function Band Pass
-                    data['data'][0]['y']=bandpass(data['data'][0]['y'], int(CutString[i+1]), int(CutString[i+2]), fs=fs)
-
-                elif (CutString[i] == 'S'):
-                    #Function Smooth
-                    smooth_signal = smooth(np.array(data['data'][0]['y']), int(CutString[i+1])) #estranho porque o smooth retorna uma lista com os dados na 1ªpos e o valor do smooth na segunda
-                    data['data'][0]['y']=smooth_signal
-
-                elif (CutString[i] == 'ABS'):
-                    #Function Absolute
-                    data['data'][0]['y']=np.absolute(data['data'][0]['y'])
-
+            # for i in range(len(CutString)): #estava range(len(CutString)-1 for some reason antes
+            #     if(CutString[i] =='H'):
+            #         #Function Amplitude
+            #         data['data'][0]['y']=highpass(data['data'][0]['y'],int(CutString[i+1]), fs=fs) #aplicar o filtro aos dados y
+            #
+            #     elif(CutString[i] =='L'):
+            #         #Function Low Pass
+            #         data['data'][0]['y']=lowpass(data['data'][0]['y'], int(CutString[i+1]), fs=fs)
+            #
+            #     elif (CutString[i] == 'BP'):
+            #         #Function Band Pass
+            #         data['data'][0]['y']=bandpass(data['data'][0]['y'], int(CutString[i+1]), int(CutString[i+2]), fs=fs)
+            #
+            #     elif (CutString[i] == 'S'):
+            #         #Function Smooth
+            #         smooth_signal = smooth(np.array(data['data'][0]['y']), int(CutString[i+1])) #estranho porque o smooth retorna uma lista com os dados na 1ªpos e o valor do smooth na segunda
+            #         data['data'][0]['y']=smooth_signal
+            #
+            #     elif (CutString[i] == 'ABS'):
+            #         #Function Absolute
+            #         data['data'][0]['y']=np.absolute(data['data'][0]['y'])
 
 
         lastclick=n_clicks
@@ -970,7 +1126,7 @@ def PreProcessingWrite(b1,b2,b3,b4,b5, finalStr):
 )
 def showPreProcess2(selected_option):
     selected_option = np.array(selected_option)
-    if len(selected_option)>2:
+    if selected_option.size>2:
         return {'display': 'inline-block'}
 
     else:
@@ -983,7 +1139,8 @@ def showPreProcess2(selected_option):
 )
 def showPreProcess1(selected_option):
     selected_option = np.array(selected_option)
-    if len(selected_option)>1:
+    print(selected_option)
+    if selected_option.size>1:
         return {'display': 'inline-block'}
 
     else:
@@ -1242,10 +1399,9 @@ def interpolate_graf(value, json_data, timevar):
         if timevar[0] in listA: #ainda so funciona para 1 signal
             for i in range (len(matchInitial)):
                 nova_lista.append(np.where( (time_array>= time_var['ttv'][matchInitial[i]]) & (time_array<= time_var['ttv'][matchFinal[i]]) ))
-
         if(timevar[0] in listB):
-            for i in range (len(matchInitial)):
-                nova_lista.append(np.where( (time_array>= time_var['tt'][matchInitial[i]]) & (time_array<= time_var['tt'][matchFinal[i]]) ))
+            for i in range (len(matchInitial)-1): #esta a sair fora do sinal qd a match é o ultimo ponto, acho que nao esta correcto assim
+                nova_lista.append(np.where( (time_array>= time_var['tt'][matchInitial[i]]) & (time_array<= time_var['tt'][matchFinal[i]]) )) #pus -1 porque estava a sair fora do vector
 
 
         flat_list=np.concatenate(nova_lista, axis=1)[0]
