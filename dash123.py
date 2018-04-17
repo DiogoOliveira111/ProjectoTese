@@ -521,6 +521,7 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
     html.Div(id='hiddenDiv', style={'display':'none'}),
     html.Div(id='hiddenDiv_timevar', style={'display':'none'}),
     html.Div(id='hiddenDiv_Dictionary', style={'display':'none'}),
+    html.Div(id='hiddenDiv_FinalString', style={'display': 'none'}),
     html.Div([
         html.Button('Show Space Vars', id='showSpaceVar'),
         dcc.Markdown(id ='text_spacevar')]
@@ -540,7 +541,7 @@ def createDictionary(df):
     MouseTime = []
     vars={}
 
-    print(len(df[3]))
+    # print(len(df[3]))
     MouseX=df[3][::7]
 
     # x = [d for d in x if re.match('\d+', d)]  # procura na lista os que sao numeros, para retirar os undefined
@@ -563,10 +564,14 @@ def createDictionary(df):
 
     # mynewlist = [s for s in MouseX if s.isdigit()]
 
-    print(len(MouseX))
+    # print(len(MouseX))
     # print(len(mynewlist))
 
     MouseDict = dict(t=MouseTime, x=MouseX, y=MouseY)
+    print(max(MouseDict['x']))
+    print(min(MouseDict['x']))
+    print(max(MouseDict['y']))
+    print(min(MouseDict['y']))
     dM = pd.DataFrame.from_dict(MouseDict)
     time_var, space_var = interpolate_data(dM, t_abandon=20)
     vars = {'time_var': time_var, 'space_var': space_var}
@@ -711,10 +716,7 @@ def updateHiddenDiv(regex, string, n_clicks):
 
 
     return json.dumps(matches, sort_keys=True)
-@app.callback( #TENHO DE POR O UPDATE PARA A HIDDEN DIV PARA DEPOIS VIR BUSCAR E POR NO OUTPUT
-    dash.dependencies.Output('SCresult1', 'value'),
-    [dash.dependencies.Input('')]
-)
+
 
 @app.callback(
     dash.dependencies.Output('SCresult1', 'style'),
@@ -722,9 +724,9 @@ def updateHiddenDiv(regex, string, n_clicks):
 )
 def showtext1(selected_option):
     selected_option = np.array(selected_option)
-    print(selected_option.size)
+
     if selected_option.size>1:
-        print('yo')
+
         return {'display': 'inline-block'}
 
     else:
@@ -870,8 +872,36 @@ def showSC1(selected_option):
     else:
         return {'display':'none'}
 
+#Symbolic Parsers
+
+@app.callback(
+    dash.dependencies.Output('SCresult2', 'value'),
+    [dash.dependencies.Input('hiddenDiv_FinalString', 'value')]
+)
+def updateHiddenDivFinalStr(finalString):
+    return finalString[2]
+
+@app.callback(
+    dash.dependencies.Output('SCresult1', 'value'),
+    [dash.dependencies.Input('hiddenDiv_FinalString', 'value')]
+)
+def updateHiddenDivFinalStr(finalString):
+    return finalString[1]
+
+@app.callback(
+    dash.dependencies.Output('SCresult', 'value'),
+    [dash.dependencies.Input('hiddenDiv_FinalString', 'value')]
+)
+def updateHiddenDivFinalStr(finalString):
+    return finalString[0]
+
+
 def SCParser(parse, selector, data):
     finalString = [[],[],[]]
+    # finalString={'0':'',
+    #              '1': '',
+    #              '2':''}
+
     for j in range(selector):
 
         for i in range(len(parse[j])):
@@ -891,7 +921,9 @@ def SCParser(parse, selector, data):
             elif (parse[j][i] == 'R'):
                 # Function RiseAmp
                 finalString[j].append(RiseAmp(data['data']['data'][j]['y'], float(parse[j][i + 1])))  # nao sei se esta a fazer bem
+        # print(finalString)
         finalString[j] = merge_chars(np.array(finalString[j]))
+    print(finalString)
     return finalString
 
 @app.callback(
@@ -925,9 +957,27 @@ def SymbolicConnotationWrite(a1,a2,a3,a4, finalStr):
         preva4 = a4
     return str(finalStr)
 
+
+# @app.callback(
+#     dash.dependencies.Output('SCresult2', 'value'),
+#     [dash.dependencies.Input('SCresult', 'value')]
+# )
+# def UpdateSCresult1(finalString):
+#
+#     return finalString[2]
+#
+# @app.callback(
+#     dash.dependencies.Output('SCresult1', 'value'),
+#     [dash.dependencies.Input('SCresult', 'value')]
+# )
+# def UpdateSCresult1(finalString):
+#
+#     return finalString[1]
+
+
 #Nota: input dos dados processados e nao originais
 @app.callback(
-    dash.dependencies.Output('SCresult', 'value'),
+    dash.dependencies.Output('hiddenDiv_FinalString', 'value'),
     [dash.dependencies.Input('SCbutton', 'n_clicks'),
     dash.dependencies.Input('timevar_graph_PP', 'figure')],
     [dash.dependencies.State('SCtext', 'value'),
@@ -938,7 +988,10 @@ def SymbolicConnotationWrite(a1,a2,a3,a4, finalStr):
 )
 def SymbolicConnotationStringParser(n_clicks, data, parse, parse1, parse2, time_Vars):
     global lastclick1
-    finalString=[]
+    # finalString = {'0': '',
+    #                '1': '',
+    #                '2': ''}
+    finalString = [[], [], []]
 
 
     if (n_clicks != None):
@@ -950,6 +1003,7 @@ def SymbolicConnotationStringParser(n_clicks, data, parse, parse1, parse2, time_
             CutString.append(parse1.split())
             CutString.append(parse2.split())
             selector=len(time_Vars)
+
             finalString=SCParser(CutString, selector, data)
 
             # for i in range(len(CutString)-1):
@@ -968,12 +1022,10 @@ def SymbolicConnotationStringParser(n_clicks, data, parse, parse1, parse2, time_
             #     elif (CutString[i] == 'R'):
             #         #Function RiseAmp
             #         finalString.append(RiseAmp(data['data']['data'][0]['y'], float(CutString[i + 1]))) #nao sei se esta a fazer bem
-
-            print(finalString)
-
-            # finalString=merge_chars(np.array(finalString))  # esta a dar um erro estranho quando escrevo a caixa--FIXED
+          # finalString=merge_chars(np.array(finalString))  # esta a dar um erro estranho quando escrevo a caixa--FIXED
         lastclick1 = n_clicks
-
+    # print(finalString)
+    # print(len(finalString))
     return finalString
 
 
@@ -983,7 +1035,7 @@ def PPProcessingParser(parse, selector, data, fs): #selector é para selecionar 
 
         for i in range(len(parse[j])):
             # print(data['data'][j]['y'])
-            print(parse[j])
+            # print(parse[j])
             if (parse[j][i] == 'H'):
                 # Function Amplitude
 
@@ -1139,7 +1191,7 @@ def showPreProcess2(selected_option):
 )
 def showPreProcess1(selected_option):
     selected_option = np.array(selected_option)
-    print(selected_option)
+
     if selected_option.size>1:
         return {'display': 'inline-block'}
 
@@ -1379,7 +1431,7 @@ def interpolate_graf(value, json_data, timevar):
 
 
     if(np.size(matches['matchInitial'])>0):
-
+        print(matches)
         lista_matches=[]
 
         for i in range(len(matchInitial)):
@@ -1402,7 +1454,6 @@ def interpolate_graf(value, json_data, timevar):
         if(timevar[0] in listB):
             for i in range (len(matchInitial)-1): #esta a sair fora do sinal qd a match é o ultimo ponto, acho que nao esta correcto assim
                 nova_lista.append(np.where( (time_array>= time_var['tt'][matchInitial[i]]) & (time_array<= time_var['tt'][matchFinal[i]]) )) #pus -1 porque estava a sair fora do vector
-
 
         flat_list=np.concatenate(nova_lista, axis=1)[0]
         flat_list=np.array(flat_list)
