@@ -480,13 +480,35 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                         }
                     ),
 
-                html.Div([
+                html.Div(id='regexSearchDiv', children=[
                         dcc.Input(id='regex',
-                        placeholder='Enter Regular Expression...',
-                        type='text',
-                        value='',
-                        # style={'display': 'none'}
-                  ),
+                                    placeholder='Enter Regular Expression...',
+                                    type='text',
+                                    value='',
+                            # style={'display': 'none'}
+                        ),
+                        dcc.Input(id='regex1',
+                                    placeholder='Enter Regular Expression...',
+                                    type='text',
+                                    value='',
+                                    style={'display': 'none'}
+                                ),
+                        dcc.Input(id='regex2',
+                                  placeholder='Enter Regular Expression...',
+                                  type='text',
+                                  value='',
+                                  style={'display': 'none'}
+                              ),
+                        dcc.Dropdown(
+                            id='DropdownAndOr',
+                            options=[
+                                {'label': 'AND', 'value': 'AND'},
+                                {'label': 'OR', 'value': 'OR'},
+                            ],
+                            value='OR',
+                            searchable=False,
+                        # style={'width': '100%'} # aparentemente nao da para mexer no estilo deste mambo
+                        ),
                 html.Button('Search Regex', id='searchregex', style=styleB)
                         ],
                          style={
@@ -568,10 +590,7 @@ def createDictionary(df):
     # print(len(mynewlist))
 
     MouseDict = dict(t=MouseTime, x=MouseX, y=MouseY)
-    print(max(MouseDict['x']))
-    print(min(MouseDict['x']))
-    print(max(MouseDict['y']))
-    print(min(MouseDict['y']))
+
     dM = pd.DataFrame.from_dict(MouseDict)
     time_var, space_var = interpolate_data(dM, t_abandon=20)
     vars = {'time_var': time_var, 'space_var': space_var}
@@ -692,30 +711,76 @@ def updateTimeVar(value):
 @app.callback(
         dash.dependencies.Output('hiddenDiv', 'children'),
         [dash.dependencies.Input('regex', 'value'),
-         dash.dependencies.Input('SCresult', 'value'),
+         dash.dependencies.Input('regex1', 'value'),
+         dash.dependencies.Input('regex2', 'value'),
+         dash.dependencies.Input('hiddenDiv_FinalString', 'value'),
          dash.dependencies.Input('searchregex', 'n_clicks'),
          ]
     )
-def updateHiddenDiv(regex, string, n_clicks):
+def updateHiddenDiv(regex0, regex1, regex2,  string, n_clicks):
     global lastclick2
     matches={"matchInitial":[], "matchFinal":[]}
+    regex=[]
+    regex.extend((regex0, regex1, regex2))
+
+
+    regex=list(filter(None, regex)) #para so iterar sobre as regex nao vazias
+
     if (n_clicks != None):
         if (n_clicks > lastclick2 and len(string)>0):
-            matchInitial = []
-            matchFinal = []
-            regit = re.finditer(regex, string[0]) #so esta a tratar o 1º sinal
+            matchInitial = [[],[],[]]
+            matchFinal = [[],[],[]]
 
-            for i in regit:
-                matchInitial.append((int(i.span()[0])))
-                matchFinal.append(int(i.span()[1]))
+            for j in range(len(regex)): #itera nos varios sinais
+                regit = re.finditer(regex[j], string[j])
 
+                for i in regit: #itera no proprio sinal
+                    matchInitial[j].append((int(i.span()[0])))
+                    matchFinal[j].append(int(i.span()[1]))
+
+            matchInitial=list(filter(None, matchInitial))  #para remover as entries vazias
+            matchFinal = list(filter(None, matchFinal))
             matchInitial = np.array(matchInitial)
             matchFinal = np.array(matchFinal)
+
             matches['matchInitial']=matchInitial.tolist()
             matches['matchFinal']= matchFinal.tolist()
 
 
     return json.dumps(matches, sort_keys=True)
+
+#Display hidden Content - PP, SC and regex
+
+@app.callback(
+    dash.dependencies.Output('regex1', 'style'),
+    [dash.dependencies.Input('dropdown_timevar', 'value')
+    ]
+)
+def showRegex1(selected_option):
+    selected_option = np.array(selected_option)
+
+    if selected_option.size > 1:
+
+        return {'display': 'inline-block'}
+
+    else:
+        return {'display': 'none'}
+
+@app.callback(
+    dash.dependencies.Output('regex2', 'style'),
+    [dash.dependencies.Input('dropdown_timevar', 'value')
+    ]
+)
+def showRegex1(selected_option):
+    selected_option = np.array(selected_option)
+
+    if selected_option.size > 2:
+
+        return {'display': 'inline-block'}
+
+    else:
+        return {'display': 'none'}
+
 
 
 @app.callback(
@@ -747,39 +812,30 @@ def showtext2(selected_option):
 
 @app.callback(
     dash.dependencies.Output('regexgraph', 'figure'),
-    [dash.dependencies.Input('regex', 'value'),
-     dash.dependencies.Input('SCresult', 'value'),
+    [dash.dependencies.Input('hiddenDiv', 'children'),
      dash.dependencies.Input('searchregex', 'n_clicks'),
      dash.dependencies.Input('timevar_graph_PP', 'figure')
      ]
 )
-def RegexParser(regex, string, n_clicks, data):
+def RegexParser(matches, n_clicks, data):
     global lastclick2
-
+    matches=json.loads(matches)
     if (n_clicks != None):
-        if(n_clicks>lastclick2 and len(string)>0):
-            str=numpy.asarray(string[0])
-            matches = []
+        if(n_clicks>lastclick2 and len(matches)>0):
+
             traces=[]
 
-            matchInitial=[]
-            matchFinal = []
-
-            regit = re.finditer(regex,string[0]) #so esta a tratar o 1º sinal
-
-            for i in regit:
-                matchInitial.append((int(i.span()[0])))
-                matchFinal.append(int(i.span()[1]))
 
 
-            matchInitial=np.array(matchInitial)
-            matchFinal=np.array(matchFinal)
+            matchInitial=np.array(matches['matchInitial'])
+            matchFinal=np.array(matches['matchFinal'])
+
             datax = np.array(data['data']['data'][0]['x'])
             datay= np.array(data['data']['data'][0]['y'])
             if (len(matchInitial)>0 and len(matchFinal)>0 ):
                 traces.append(go.Scatter( #match initial append
-                    x=datax[matchInitial-1],
-                    y=datay[matchInitial-1],
+                    x=datax[matchInitial[0]], #tirei 0 -1, tem de se ter em conta o multisignal
+                    y=datay[matchInitial[0]],
                     # text=selected_option[0],
                     mode='markers',
                     opacity=0.7,
@@ -794,8 +850,8 @@ def RegexParser(regex, string, n_clicks, data):
 
                 ))
                 traces.append(go.Scatter( #match final append
-                    x=datax[matchFinal-1], #porque -1 ?
-                    y=datay[matchFinal-1],
+                    x=datax[matchFinal[0]], #porque -1 ?
+                    y=datay[matchFinal[0]],
                     # text=selected_option[0],
                     mode='markers',
                     opacity=0.7,
@@ -921,9 +977,9 @@ def SCParser(parse, selector, data):
             elif (parse[j][i] == 'R'):
                 # Function RiseAmp
                 finalString[j].append(RiseAmp(data['data']['data'][j]['y'], float(parse[j][i + 1])))  # nao sei se esta a fazer bem
-        # print(finalString)
+
         finalString[j] = merge_chars(np.array(finalString[j]))
-    print(finalString)
+
     return finalString
 
 @app.callback(
@@ -1261,13 +1317,15 @@ def update_timevarfigure(selected_option):
     # [dash.dependencies.Input('interpolate', 'n_clicks'),
      [dash.dependencies.Input('checklistheatmap', 'values'),
      dash.dependencies.Input('hiddenDiv', 'children'),
-     dash.dependencies.Input('hiddenDiv_timevar', 'children')
+     dash.dependencies.Input('hiddenDiv_timevar', 'children'),
+    dash.dependencies.Input('DropdownAndOr', 'value')
      # dash.dependencies.Input('sliderpos', 'value')
      ])
-def interpolate_graf(value, json_data, timevar):
+def interpolate_graf(value, json_data, timevar, logic):
     global MouseDict
     global space_var
     matches = json.loads(json_data)
+
     timevar=json.loads(timevar)
 
     matchInitial = matches['matchInitial']
@@ -1431,14 +1489,14 @@ def interpolate_graf(value, json_data, timevar):
 
 
     if(np.size(matches['matchInitial'])>0):
-        print(matches)
+        # print(matches)
         lista_matches=[]
+        # for i in range(len(matchInitial)): #No idea what the purpose of this is
+        #     for a in range(matchInitial[i], matchFinal[i]+1): #+1 porque o range faz ate o valor-1
+        #         lista_matches.append(a)
 
-        for i in range(len(matchInitial)):
-            for a in range(matchInitial[i], matchFinal[i]+1): #+1 porque o range faz ate o valor-1
-                lista_matches.append(a)
-
-        nova_lista=[]
+        nova_lista=[[],[],[]]
+        flat_list= [[], [], []]
 
         # for i in range(len(lista_matches)):
         #     valor_time=time_var['ttv'][lista_matches[i]]
@@ -1448,15 +1506,30 @@ def interpolate_graf(value, json_data, timevar):
         listA=["vt", "vx", "vy", "a", "jerk"]
         listB=["xt", "yt"]
 
-        if timevar[0] in listA: #ainda so funciona para 1 signal
-            for i in range (len(matchInitial)):
-                nova_lista.append(np.where( (time_array>= time_var['ttv'][matchInitial[i]]) & (time_array<= time_var['ttv'][matchFinal[i]]) ))
-        if(timevar[0] in listB):
-            for i in range (len(matchInitial)-1): #esta a sair fora do sinal qd a match é o ultimo ponto, acho que nao esta correcto assim
-                nova_lista.append(np.where( (time_array>= time_var['tt'][matchInitial[i]]) & (time_array<= time_var['tt'][matchFinal[i]]) )) #pus -1 porque estava a sair fora do vector
+        for j in range(len(matchInitial)): #para iterar entre os varios sinais
 
-        flat_list=np.concatenate(nova_lista, axis=1)[0]
-        flat_list=np.array(flat_list)
+
+            if timevar[0] in listA:
+                for i in range (len(matchInitial[j])-1): #para iterar dentro do mm sinal entre as varias matches
+                    nova_lista[j].append(np.where( (time_array>= time_var['ttv'][matchInitial[j][i]]) & (time_array<= time_var['ttv'][matchFinal[j][i]]) ))
+            if(timevar[0] in listB):
+                for i in range (len(matchInitial[j])-1): #esta a sair fora do sinal qd a match é o ultimo ponto, acho que nao esta correcto assim
+                    nova_lista[j].append(np.where( (time_array>= time_var['tt'][matchInitial[j][i]]) & (time_array<= time_var['tt'][matchFinal[j][i]]) )) #pus -1 porque estava a sair fora do vector
+
+            flat_list[j]=np.concatenate(nova_lista[j], axis=1)[0]
+        print(flat_list)
+        print(len(flat_list[2]))
+        flat_list = np.array(flat_list)
+        final_list = []
+
+        for i in range(len(flat_list)): #para remover a parte vazia dos vectores pq o filter nao funciona
+            if len(flat_list[i])>0:
+                final_list.append(flat_list[i])
+
+
+        print(final_list)
+
+
 
 
         #concatenate com ciclos
@@ -1473,21 +1546,39 @@ def interpolate_graf(value, json_data, timevar):
         # nova_lista=np.array((nova_lista))
         # nova_lista=np.rint(nova_lista).astype(int)
 
+        if (logic=='AND'):
+            for i in range(len(final_list)):
+                for j in range(len(final_list[i])):
+                    # if
+            duplicates_list=[]
+            for item in final_list:
+                matches = -1
+                for x in final_list:
+                    if (item[0] == x[0]):
+                        matches += 1
+                if matches >= 1:
+                    if item[0] not in duplicates_list:
+                        duplicates_list.append(item[0])
+
+        print(duplicates_list)
         Xpos=np.array(MouseDict['x'])
         Ypos=np.array(MouseDict['y'])
-        traces.append(go.Scatter(
-            x=Xpos[flat_list],
-            y=Ypos[flat_list],
-            # text=selected_option[0],
-            opacity=1,
-            mode='markers',
-            # marker={
-            #     'size': 5,
-            #     'line': {'width': 0.5, 'color': 'white'}
-            # },
-            marker={'size': 5, 'color': '#A7CCED'},
-            name="Matches"
-        ))
+        for i in range(len(final_list)):
+            traces.append(go.Scatter(
+                x=Xpos[final_list[i]],
+                y=Ypos[final_list[i]],
+                # text=selected_option[0],
+                opacity=1,
+                mode='markers',
+                # marker={
+                #     'size': 5,
+                #     'line': {'width': 0.5, 'color': 'white'}
+                # },
+                marker={'size': 5,
+                        # 'color': '#A7CCED'
+                        },
+                name="Matches"+ str(i)
+            ))
 
     return {
             'data': traces,
