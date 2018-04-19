@@ -22,6 +22,7 @@ import io
 import dash_table_experiments as dt
 import datetime
 
+
 traces =[]
 preva1= 0
 preva2= 0
@@ -109,23 +110,25 @@ colors = {
 #Auxiliary Functions
 #-----------------------------
 
-def DrawShapes(matchInitial, matchFinal, datax, datay):
+def DrawShapes(matchInitial, matchFinal, datax, datay, index):
     shapes=[]
-    for i in range(np.size(matchInitial)):
+
+    for i in range(np.size(matchInitial[index])):
         shape={
             'type': 'rect',
             # x-reference is assigned to the x-values
             'xref': 'x',
             # y-reference is assigned to the plot paper [0,1]
             'yref': 'y',
-            'x0': datax[matchInitial[i]-1],
+            'x0': datax[matchInitial[index][i]],
             'y0': min(datay),
-            'x1': datax[matchFinal[i]-1],
+            'x1': datax[matchFinal[index][i]],
             'y1': max(datay),
             'fillcolor': '#A7CCED',
             'opacity': 0.7,
             'line': {
-                'width': 0,
+                'width': 1,
+                'color': 'rgb(55, 128, 191)',
                 }}
         shapes.append(shape)
 
@@ -287,9 +290,18 @@ Div_XY_interpolate=dcc.Checklist(
 
 Div_PP = dcc.Graph(id='timevar_graph_PP', style={'display': 'none', 'width':'100%'})
 
-Div_SC = dcc.Graph(id='regexgraph', style={'display': 'none', 'width':'100%'})
+Div_SC = dcc.Graph(id='regexgraph', style={'display': 'none', 'width':'100%'}) # nao esta aqui a fazer nada
 
-Div_S = dcc.Graph(id='regexgraph', style={'display': 'none', 'width':'100%' })
+Div_S = html.Div([dcc.Graph(id='regexgraph', style={'display': 'none', 'width':'100%' }),
+                    dcc.Dropdown( id='dropdown_Search',
+                        options=[
+                            # {'label':'Signal 1', 'value' :'S1'}
+                            ],
+                        value='',
+                        # multi=True #tenho de implementar depois
+                    )
+
+                 ])
 
 #-------------------------------------------------------------------------------
 # App Layout
@@ -586,24 +598,22 @@ def createDictionary(df):
 
     # mynewlist = [s for s in MouseX if s.isdigit()]
 
-    # print(len(MouseX))
-    # print(len(mynewlist))
+
 
     MouseDict = dict(t=MouseTime, x=MouseX, y=MouseY)
 
     dM = pd.DataFrame.from_dict(MouseDict)
     time_var, space_var = interpolate_data(dM, t_abandon=20)
+
     vars = {'time_var': time_var, 'space_var': space_var}
-    # print(vars)
 
 
 def parse_contents(contents, filename, date):
-    # print(contents)
+
     content_type, content_string = contents.split(',')
-    # print(content_type)
-    # print(content_string)
+
     decoded = base64.b64decode(content_string)
-    # print(decoded)
+
     # try:
         # if 'csv' in filename:
             # Assume that the user uploaded a CSV file
@@ -650,12 +660,15 @@ def parse_contents(contents, filename, date):
                dash.dependencies.Input('upload-data', 'last_modified')
               ])
 def uploadData(list_of_contents, list_of_names, list_of_dates):
+    children=[]
+
     if list_of_contents is not None:
+
         children = [
             parse_contents(c, n, d) for c, n, d in
             zip(list_of_contents, list_of_names, list_of_dates)]
-        # print(children)
-        return children
+
+    return children
 
 
 @app.callback(
@@ -702,10 +715,33 @@ def display_S(value):
         return {'display':'none'}
 
 @app.callback(
+    dash.dependencies.Output('dropdown_Search', 'options'),
+    [dash.dependencies.Input('hiddenDiv_timevar', 'children')],
+    # [dash.dependencies.State('dropdown_Search', 'options')]
+)
+def updateDropdownSearch(selected_options):
+    selected_options=json.loads(selected_options)
+
+    timeVar_Dict=dict(vt='Velocity in time',
+         vy='Velocity in Y',
+         vx='Velocity in X',
+         jerk='Jerk',
+         a='Acceleration in time',
+         xt='X position in time',
+         yt='Y position in time'
+         )
+    current_options=[]
+    for i in range(len(selected_options)):
+
+        current_options.append({'label': timeVar_Dict[str(selected_options[i])], 'value': selected_options[i]})
+
+    return current_options
+
+@app.callback(
     dash.dependencies.Output('hiddenDiv_timevar', 'children'),
     [dash.dependencies.Input('dropdown_timevar', 'value')]
 )
-def updateTimeVar(value):
+def updateTimeVar(value): #so uso isto 1x, talvez tenha de trocar
     return json.dumps(value)
 
 @app.callback(
@@ -735,8 +771,8 @@ def updateHiddenDiv(regex0, regex1, regex2,  string, n_clicks):
                 regit = re.finditer(regex[j], string[j])
 
                 for i in regit: #itera no proprio sinal
-                    matchInitial[j].append((int(i.span()[0])))
-                    matchFinal[j].append(int(i.span()[1]))
+                    matchInitial[j].append((int(i.span()[0])-1)) #isto esta a dar a posiçao a começar em 1 por isso dava erro se houvesse match no ultimo ponto
+                    matchFinal[j].append(int(i.span()[1]-1))
 
             matchInitial=list(filter(None, matchInitial))  #para remover as entries vazias
             matchFinal = list(filter(None, matchFinal))
@@ -814,13 +850,23 @@ def showtext2(selected_option):
     dash.dependencies.Output('regexgraph', 'figure'),
     [dash.dependencies.Input('hiddenDiv', 'children'),
      dash.dependencies.Input('searchregex', 'n_clicks'),
-     dash.dependencies.Input('timevar_graph_PP', 'figure')
+     dash.dependencies.Input('timevar_graph_PP', 'figure'),
+     dash.dependencies.Input('dropdown_Search', 'value'),
+    dash.dependencies.Input('hiddenDiv_timevar', 'children')
      ]
 )
-def RegexParser(matches, n_clicks, data):
+def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
     global lastclick2
     matches=json.loads(matches)
+    timevars_initial=json.loads(timevars_initial)
+    print(timevars_initial)
+    print(timevars_final)
+
     if (n_clicks != None):
+
+        index_tv = timevars_initial.index(timevars_final)
+        print(index_tv)
+
         if(n_clicks>lastclick2 and len(matches)>0):
 
             traces=[]
@@ -829,13 +875,15 @@ def RegexParser(matches, n_clicks, data):
 
             matchInitial=np.array(matches['matchInitial'])
             matchFinal=np.array(matches['matchFinal'])
-
-            datax = np.array(data['data']['data'][0]['x'])
-            datay= np.array(data['data']['data'][0]['y'])
+            print(matchInitial)
+            print(matchFinal)
+            datax = np.array(data['data']['data'][index_tv]['x'])
+            datay= np.array(data['data']['data'][index_tv]['y'])
             if (len(matchInitial)>0 and len(matchFinal)>0 ):
+
                 traces.append(go.Scatter( #match initial append
-                    x=datax[matchInitial[0]], #tirei 0 -1, tem de se ter em conta o multisignal
-                    y=datay[matchInitial[0]],
+                    x=datax[matchInitial[index_tv]], #NOTA TENHO DE TER EM CONTA SE QUISER MOSTRAR UM SINAL NAO TRATADO
+                    y=datay[matchInitial[index_tv]],
                     # text=selected_option[0],
                     mode='markers',
                     opacity=0.7,
@@ -850,8 +898,8 @@ def RegexParser(matches, n_clicks, data):
 
                 ))
                 traces.append(go.Scatter( #match final append
-                    x=datax[matchFinal[0]], #porque -1 ?
-                    y=datay[matchFinal[0]],
+                    x=datax[matchFinal[index_tv]], #porque -1 ?
+                    y=datay[matchFinal[index_tv]],
                     # text=selected_option[0],
                     mode='markers',
                     opacity=0.7,
@@ -880,7 +928,7 @@ def RegexParser(matches, n_clicks, data):
                 'data': traces,
                 'layout': go.Layout(
                     hovermode='closest',
-                    shapes =DrawShapes(matchInitial,matchFinal,datax, datay),
+                    shapes =DrawShapes(matchInitial,matchFinal,datax, datay, index_tv),
                     autosize=True,
                     xaxis=dict(ticks='', showgrid=False, zeroline=False),
                     yaxis=dict(ticks='', showgrid=False, zeroline=False)
@@ -1517,8 +1565,7 @@ def interpolate_graf(value, json_data, timevar, logic):
                     nova_lista[j].append(np.where( (time_array>= time_var['tt'][matchInitial[j][i]]) & (time_array<= time_var['tt'][matchFinal[j][i]]) )) #pus -1 porque estava a sair fora do vector
 
             flat_list[j]=np.concatenate(nova_lista[j], axis=1)[0]
-        print(flat_list)
-        print(len(flat_list[2]))
+
         flat_list = np.array(flat_list)
         final_list = []
 
@@ -1527,7 +1574,7 @@ def interpolate_graf(value, json_data, timevar, logic):
                 final_list.append(flat_list[i])
 
 
-        print(final_list)
+
 
 
 
@@ -1545,28 +1592,23 @@ def interpolate_graf(value, json_data, timevar, logic):
         # nova_lista = [i * ratio for i in lista_matches]
         # nova_lista=np.array((nova_lista))
         # nova_lista=np.rint(nova_lista).astype(int)
+        Xpos = np.array(MouseDict['x'])
+        Ypos = np.array(MouseDict['y'])
 
-        if (logic=='AND'):
-            for i in range(len(final_list)):
-                for j in range(len(final_list[i])):
-                    # if
+        if (logic=='AND'): #HA UM ALGORITMO MELHOR PARA ISTO FOR SURE- encontrar os duplicates nas nested lists
             duplicates_list=[]
-            for item in final_list:
-                matches = -1
-                for x in final_list:
-                    if (item[0] == x[0]):
-                        matches += 1
-                if matches >= 1:
-                    if item[0] not in duplicates_list:
-                        duplicates_list.append(item[0])
+            auxiliary_list=[]
+            for signal in range(len(final_list)):
+                for i in range(len(final_list[signal])):
+                    if final_list[signal][i] not in auxiliary_list:
+                        auxiliary_list.append(final_list[signal][i])
+                    elif final_list[signal][i] in auxiliary_list:
+                        duplicates_list.append(final_list[signal][i])
 
-        print(duplicates_list)
-        Xpos=np.array(MouseDict['x'])
-        Ypos=np.array(MouseDict['y'])
-        for i in range(len(final_list)):
+            final_list=np.array(duplicates_list)
             traces.append(go.Scatter(
-                x=Xpos[final_list[i]],
-                y=Ypos[final_list[i]],
+                x=Xpos[final_list],
+                y=Ypos[final_list],
                 # text=selected_option[0],
                 opacity=1,
                 mode='markers',
@@ -1577,8 +1619,30 @@ def interpolate_graf(value, json_data, timevar, logic):
                 marker={'size': 5,
                         # 'color': '#A7CCED'
                         },
-                name="Matches"+ str(i)
+                name="Matches"
             ))
+
+
+
+
+
+        elif(logic=='OR'):
+            for i in range(len(final_list)):
+                traces.append(go.Scatter(
+                        x=Xpos[final_list[i]],
+                        y=Ypos[final_list[i]],
+                        # text=selected_option[0],
+                        opacity=1,
+                        mode='markers',
+                        # marker={
+                        #     'size': 5,
+                        #     'line': {'width': 0.5, 'color': 'white'}
+                        # },
+                        marker={'size': 5,
+                                # 'color': '#A7CCED'
+                                },
+                        name="Matches"+ str(i)
+                    ))
 
     return {
             'data': traces,
