@@ -40,9 +40,15 @@ def get_path_smooth_s(t, x, y, begin_interp=0, end_interp=-1, stol=0.1):
 	y = y[begin_interp:end_interp]
 
 	s = get_s(x, y)
+	# print('x')
+	# print(pl.diff(x))
+	# print('y')
+	# print(pl.diff(y))
+	# print(s)
+	# print(min(pl.diff(s)))
 	ss = pl.arange(s[0], s[-1], stol)
 
-	if len(x) > 4:
+	if (len(x) > 4 ):
 		splxs = sp.interpolate.UnivariateSpline(s, x, k=2, s=2)
 		xs = splxs(ss)
 		splys = sp.interpolate.UnivariateSpline(s, y, k=2, s=2)
@@ -117,7 +123,12 @@ def get_s(x, y):
 	  float cumulative distance traveled.
 	"""
 	ds = pl.sqrt(pl.diff(x)**2+pl.diff(y)**2)
+	print(pl.unique(ds))
+	# ds=pl.unique(ds)
 	s = pl.cumsum(pl.concatenate(([0], ds)))
+
+	# print(min(pl.diff(s)))
+
 
 	return s
 

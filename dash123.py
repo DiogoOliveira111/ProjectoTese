@@ -21,7 +21,9 @@ import base64
 import io
 import dash_table_experiments as dt
 import datetime
-
+from numpy import diff
+from plotly import tools
+import pylab as pl
 
 traces =[]
 preva1= 0
@@ -112,26 +114,30 @@ colors = {
 
 def DrawShapes(matchInitial, matchFinal, datax, datay, index):
     shapes=[]
-
-    for i in range(np.size(matchInitial[index])):
-        shape={
-            'type': 'rect',
-            # x-reference is assigned to the x-values
-            'xref': 'x',
-            # y-reference is assigned to the plot paper [0,1]
-            'yref': 'y',
-            'x0': datax[matchInitial[index][i]],
-            'y0': min(datay),
-            'x1': datax[matchFinal[index][i]],
-            'y1': max(datay),
-            'fillcolor': '#A7CCED',
-            'opacity': 0.7,
-            'line': {
-                'width': 1,
-                'color': 'rgb(55, 128, 191)',
-                }}
-        shapes.append(shape)
-
+    print(index)
+    print(np.size(matchInitial[index]))
+    print(matchInitial)
+    print(matchFinal)
+    # print(datax[matchInitial[index][0]])
+    # print(datax[matchFinal[index][0]])
+    # for i in range(np.size(matchInitial[index])):
+    shape={
+        'type': 'rect',
+        # x-reference is assigned to the x-values
+        'xref': 'x',
+        # y-reference is assigned to the plot paper [0,1]
+        'yref': 'y',
+        'x0': datax[matchInitial[index][0]],
+        'y0': min(datay),
+        'x1': datax[matchFinal[index][0]],
+        'y1': max(datay),
+        # 'fillcolor': '#A7CCED',
+        'opacity': 0.7,
+        'line': {
+            'width': 1,
+            'color': 'rgb(55, 128, 191)',
+            }}
+    shapes.append(shape)
     return shapes
 
 
@@ -574,18 +580,43 @@ def createDictionary(df):
     MouseY = []
     MouseTime = []
     vars={}
-
+    df.sort_values(by=[11])
+    # print(diff(df[11]))
+    # print(df.columns.tolist())
     # print(len(df[3]))
-    MouseX=df[3][::7]
+    MouseX=df[5][::7]
 
     # x = [d for d in x if re.match('\d+', d)]  # procura na lista os que sao numeros, para retirar os undefined
     # MouseX = np.array(x).astype(int)  # converte string para int, so é preciso isto se o ficheiro tiver undefineds
 
 
-    MouseY=df[4][::7]
+    MouseY=df[6][::7]
+
+    # print(MouseY)
+    # MouseX=np.array(MouseX)
+    # print(MouseX.iloc(1))
+    lastrowX=0
+    lastrowY=0
+    for rowX, rowY in zip(MouseX,MouseY):
+        if rowX==lastrowX and rowY==lastrowY:
+            MouseX.drop(rowX)
+            MouseY.drop(rowY)
+
+        lastrowX=rowX
+        lastrowY=rowY
+
+        print(rowX)
+        print(rowY)
+        # print(i)
+        # if (MouseX.iloc == MouseX[i+1]):
+        #     del MouseX.iloc[i+1]
+        #     del MouseY[i+1]
+
+    #         print('hey')
+
     # y = [d for d in y if re.match('\d+', d)]  # procura na lista os que sao numeros, para retirar os undefined
     # MouseY= np.array(y).astype(int)
-    # print(MouseY)
+
     for i in range(len(df[11])):
         if i==0:
             initial_time=df[11][0]/1000
@@ -593,7 +624,8 @@ def createDictionary(df):
         else:
             MouseTime.append((df[11][i]/1000)-initial_time)
     MouseTime=MouseTime[::7]
-
+    # print(diff(MouseTime))
+    # print(min(diff(MouseTime)))
     # print(numpy.isnan(MouseX).any())
 
     # mynewlist = [s for s in MouseX if s.isdigit()]
@@ -604,6 +636,15 @@ def createDictionary(df):
 
     dM = pd.DataFrame.from_dict(MouseDict)
     time_var, space_var = interpolate_data(dM, t_abandon=20)
+    # print(pl.diff(MouseX))
+    # print(pl.diff(MouseY))
+    # print(np.where(pl.diff(MouseX)==0 and pl.diff(MouseY)==0))
+    # print(space_var['w'])
+    # print(space_var['straightness'])
+    cleanedList = [x for x in space_var['straightness'] if str(x) != 'nan']
+
+    # print(len(print(space_var['straightness'])))
+    # print(len(time_var['vt']))
 
     vars = {'time_var': time_var, 'space_var': space_var}
 
@@ -731,9 +772,28 @@ def updateDropdownSearch(selected_options):
          yt='Y position in time'
          )
     current_options=[]
+    # print(selected_options)
     for i in range(len(selected_options)):
 
         current_options.append({'label': timeVar_Dict[str(selected_options[i])], 'value': selected_options[i]})
+    if len(selected_options) == 2: #deve haver uma forma melhor de iterar isto para que independentemente da qtd de sinais escolhidos
+            # for j in range(len(selected_options)):
+        current_options.append({'label':timeVar_Dict[str(selected_options[0])]+ " and "+ timeVar_Dict[str(selected_options[1])], 'value': selected_options[0]+ " " +selected_options[1]})
+    if len(selected_options)==3:
+        current_options.append(
+            {'label': timeVar_Dict[str(selected_options[0])] + " and " + timeVar_Dict[str(selected_options[1])],
+             'value': selected_options[0] +" "+ selected_options[1]})
+        current_options.append(
+            {'label': timeVar_Dict[str(selected_options[1])] + " and " + timeVar_Dict[str(selected_options[2])],
+             'value': selected_options[1] + " "+ selected_options[2]})
+        current_options.append(
+            {'label': timeVar_Dict[str(selected_options[0])] + " and " + timeVar_Dict[str(selected_options[2])],
+             'value': selected_options[0] + " "+ selected_options[2]})
+        current_options.append(
+            {'label': timeVar_Dict[str(selected_options[0])] + " and " + timeVar_Dict[str(selected_options[1])]+ " and " + timeVar_Dict[str(selected_options[2])],
+             'value': selected_options[0] + " " + selected_options[1]+ " "+ selected_options[2]})
+
+
 
     return current_options
 
@@ -771,8 +831,8 @@ def updateHiddenDiv(regex0, regex1, regex2,  string, n_clicks):
                 regit = re.finditer(regex[j], string[j])
 
                 for i in regit: #itera no proprio sinal
-                    matchInitial[j].append((int(i.span()[0])-1)) #isto esta a dar a posiçao a começar em 1 por isso dava erro se houvesse match no ultimo ponto
-                    matchFinal[j].append(int(i.span()[1]-1))
+                    matchInitial[j].append((int(i.span()[0]))) #isto esta a dar a posiçao a começar em 1 por isso dava erro se houvesse match no ultimo ponto
+                    matchFinal[j].append(int(i.span()[1]))
 
             matchInitial=list(filter(None, matchInitial))  #para remover as entries vazias
             matchFinal = list(filter(None, matchFinal))
@@ -781,6 +841,8 @@ def updateHiddenDiv(regex0, regex1, regex2,  string, n_clicks):
 
             matches['matchInitial']=matchInitial.tolist()
             matches['matchFinal']= matchFinal.tolist()
+            print(len(string[0]))
+            print(matches)
 
 
     return json.dumps(matches, sort_keys=True)
@@ -860,79 +922,139 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
     matches=json.loads(matches)
     timevars_initial=json.loads(timevars_initial)
     print(timevars_initial)
-    print(timevars_final)
+    print(timevars_final.split())
+    timevars_final=timevars_final.split()
 
-    if (n_clicks != None):
+    if (n_clicks != None and len(timevars_final)>0):
 
-        index_tv = timevars_initial.index(timevars_final)
+        index_tv=[]
+        for i in range(len(timevars_final)): #para percorrer os varios sinais e saber os indices originais
+            index_tv.append(timevars_initial.index(timevars_final[i]))
         print(index_tv)
 
         if(n_clicks>lastclick2 and len(matches)>0):
 
-            traces=[]
+            traces = []
+
+
+            # print(matchInitial)
+            # print(matchFinal)
+            # counter_subplot=0
+            counter_subplot = 1
+            fig = tools.make_subplots(rows=len(index_tv), cols=1)
+            for j in index_tv:
+
+                matchInitial = np.array(matches['matchInitial'])[j]
+                matchFinal = np.array(matches['matchFinal'])[j]
+                print(matchInitial)
 
 
 
-            matchInitial=np.array(matches['matchInitial'])
-            matchFinal=np.array(matches['matchFinal'])
-            print(matchInitial)
-            print(matchFinal)
-            datax = np.array(data['data']['data'][index_tv]['x'])
-            datay= np.array(data['data']['data'][index_tv]['y'])
-            if (len(matchInitial)>0 and len(matchFinal)>0 ):
+                datax = np.array(data['data']['data'][j]['x'])
+                datay= np.array(data['data']['data'][j]['y'])
+                if (len(matchInitial)>0 and len(matchFinal)>0 ):
 
-                traces.append(go.Scatter( #match initial append
-                    x=datax[matchInitial[index_tv]], #NOTA TENHO DE TER EM CONTA SE QUISER MOSTRAR UM SINAL NAO TRATADO
-                    y=datay[matchInitial[index_tv]],
-                    # text=selected_option[0],
-                    mode='markers',
-                    opacity=0.7,
-                    marker=dict(
-                        size=10,
-                        color='#EAEBED',
-                        line=dict(
-                            width=2)
+                    for i in range(len(matchInitial)):
+                        print(matchInitial)
+                        traces.append(go.Scatter(  # match initial append
+                                x=datax[matchInitial[i]:matchFinal[i]], #NOTA TENHO DE TER EM CONTA SE QUISER MOSTRAR UM SINAL NAO TRATADO
+                                y=datay[matchInitial[i]:matchFinal[i]],
+                                # text=selected_option[0],
+                                mode='markers',
+                                opacity=0.7,
+                                marker=dict(
+                                    size=5,
+                                    color='#EAEBED',
+                                    line=dict(
+                                        width=2)
+
+                                ),
+                            #     # xaxis='x'+ str(counter),
+                            #     # yaxis='y1'+str(counter),
+                                name='Match'
+
+                            ))
+                        fig.append_trace(traces[0], counter_subplot, 1)
+
+
+
+
+
+                    # traces.append(go.Scatter( #match initial append
+                    #     x=datax[matchInitial], #NOTA TENHO DE TER EM CONTA SE QUISER MOSTRAR UM SINAL NAO TRATADO
+                    #     y=datay[matchInitial],
+                    #     # text=selected_option[0],
+                    #     mode='markers',
+                    #     opacity=0.7,
+                    #     marker=dict(
+                    #         size=10,
+                    #         color='#EAEBED',
+                    #         line=dict(
+                    #             width=2)
+                    #
+                    #     ),
+                    #     # xaxis='x'+ str(counter),
+                    #     # yaxis='y1'+str(counter),
+                    #     name='Match Initial'
+                    #
+                    # ))
+                    # # print('traces0')
+                    # # print(traces[0])
+                    # fig.append_trace(traces[0], counter_subplot, 1)
+                    #
+                    # traces.append(go.Scatter( #match final append
+                    #     x=datax[matchFinal], #porque -1 ?
+                    #     y=datay[matchFinal],
+                    #     # text=selected_option[0],
+                    #     mode='markers',
+                    #     opacity=0.7,
+                    #     marker=dict(
+                    #         size=10,
+                    #         color='#006989',
+                    #         line=dict(
+                    #             width=2)
+                    #
+                    #     ),
+                    #     # xaxis='x' + str(counter),
+                    #     # yaxis='y1' + str(counter),
+                    #     name='Match Final'
+                    # ))
+
+                    # fig.append_trace(traces[1], counter_subplot, 1)
+                traces.append(go.Scatter(
+                    x=datax,
+                    y=datay,
+                    mode='lines',
+                    line=dict(
+                        color='black',
+                        width=0.7
 
                     ),
-                    name='Match Initial'
-
+                    # xaxis='x' + str(counter),
+                    # yaxis='y1' + str(counter),
+                    name='Signal'
                 ))
-                traces.append(go.Scatter( #match final append
-                    x=datax[matchFinal[index_tv]], #porque -1 ?
-                    y=datay[matchFinal[index_tv]],
-                    # text=selected_option[0],
-                    mode='markers',
-                    opacity=0.7,
-                    marker=dict(
-                        size=10,
-                        color='#006989',
-                        line=dict(
-                            width=2)
+                # print('traces2')
+                fig.append_trace(traces[1], counter_subplot, 1)
+                print(counter_subplot)
+                counter_subplot = counter_subplot + 1
+                # fig['layout'].update(height=600, width=600)
 
-                    ),
-                    name='Match Final'
-                ))
-            traces.append(go.Scatter(
-                x=datax,
-                y=datay,
-                mode='lines',
-                line=dict(
-                    color='black',
-                    width=0.7
-
-                ),
-                name='Signal'
-            ))
-
-            return {
-                'data': traces,
-                'layout': go.Layout(
-                    hovermode='closest',
-                    shapes =DrawShapes(matchInitial,matchFinal,datax, datay, index_tv),
-                    autosize=True,
-                    xaxis=dict(ticks='', showgrid=False, zeroline=False),
-                    yaxis=dict(ticks='', showgrid=False, zeroline=False)
-                )}
+            return fig
+                # {
+                #     'data': traces,
+                #     'layout': go.Layout(
+                #         hovermode='closest',
+                #         shapes =DrawShapes(matchInitial,matchFinal,datax, datay, j),
+                        # autosize=True,
+                        # xaxis=dict(ticks='', showgrid=False, zeroline=False),
+                        # yaxis=dict(ticks='', showgrid=False, zeroline=False),
+                        # yaxis2=dict(
+                        #     domain=[0, 0.45],
+                        #     anchor='x2'
+                        # ),
+                        # xaxis2=dict(anchor='y2')
+                    # )}
 
         else:
             return {
@@ -1375,7 +1497,8 @@ def interpolate_graf(value, json_data, timevar, logic):
     matches = json.loads(json_data)
 
     timevar=json.loads(timevar)
-
+    # print(timevar)
+    # print(matches)
     matchInitial = matches['matchInitial']
     matchFinal = matches['matchFinal']
 
@@ -1554,13 +1677,16 @@ def interpolate_graf(value, json_data, timevar, logic):
         listA=["vt", "vx", "vy", "a", "jerk"]
         listB=["xt", "yt"]
 
-        for j in range(len(matchInitial)): #para iterar entre os varios sinais
 
 
-            if timevar[0] in listA:
+        for j in range(len(timevar)): #para iterar entre os varios sinais
+
+
+            if timevar[j] in listA:
+
                 for i in range (len(matchInitial[j])-1): #para iterar dentro do mm sinal entre as varias matches
                     nova_lista[j].append(np.where( (time_array>= time_var['ttv'][matchInitial[j][i]]) & (time_array<= time_var['ttv'][matchFinal[j][i]]) ))
-            if(timevar[0] in listB):
+            if(timevar[j] in listB):
                 for i in range (len(matchInitial[j])-1): #esta a sair fora do sinal qd a match é o ultimo ponto, acho que nao esta correcto assim
                     nova_lista[j].append(np.where( (time_array>= time_var['tt'][matchInitial[j][i]]) & (time_array<= time_var['tt'][matchFinal[j][i]]) )) #pus -1 porque estava a sair fora do vector
 
