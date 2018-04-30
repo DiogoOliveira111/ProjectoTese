@@ -1,6 +1,6 @@
 import numpy as np
 from AuxiliaryMethods import detect_peaks
-
+import math
 
 # Connotation Methods
 def DiffC(s, t, signs=['-', '_', '+']):
@@ -65,6 +65,7 @@ def RiseAmp(Signal, t):
     return risingH
 
 def AmpC(s, t, p='>'):
+
 
     thr = (float(np.max(s) - np.min(s)) * t) + np.min(s)
     if (p == '<'):

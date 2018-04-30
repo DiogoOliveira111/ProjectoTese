@@ -114,30 +114,25 @@ colors = {
 
 def DrawShapes(matchInitial, matchFinal, datax, datay, index):
     shapes=[]
-    print(index)
-    print(np.size(matchInitial[index]))
-    print(matchInitial)
-    print(matchFinal)
-    # print(datax[matchInitial[index][0]])
-    # print(datax[matchFinal[index][0]])
-    # for i in range(np.size(matchInitial[index])):
-    shape={
-        'type': 'rect',
-        # x-reference is assigned to the x-values
-        'xref': 'x',
-        # y-reference is assigned to the plot paper [0,1]
-        'yref': 'y',
-        'x0': datax[matchInitial[index][0]],
-        'y0': min(datay),
-        'x1': datax[matchFinal[index][0]],
-        'y1': max(datay),
-        # 'fillcolor': '#A7CCED',
-        'opacity': 0.7,
-        'line': {
-            'width': 1,
-            'color': 'rgb(55, 128, 191)',
-            }}
-    shapes.append(shape)
+    print(len(matchInitial[index]))
+    for i in range(len(matchInitial[index])):
+        shape={
+            'type': 'rect',
+            # x-reference is assigned to the x-values
+            'xref': 'x',
+            # y-reference is assigned to the plot paper [0,1]
+            'yref': 'y',
+            'x0': datax[matchInitial[index][i]],
+            'y0': min(datay),
+            'x1': datax[matchFinal[index][i]-1], #estava a saltar fora, preciso de ver bem
+            'y1': max(datay),
+            'fillcolor': '#A7CCED',
+            'opacity': 0.7,
+            'line': {
+                'width': 1,
+                'color': 'rgb(55, 128, 191)',
+                }}
+        shapes.append(shape)
     return shapes
 
 
@@ -584,30 +579,30 @@ def createDictionary(df):
     # print(diff(df[11]))
     # print(df.columns.tolist())
     # print(len(df[3]))
-    MouseX=df[5][::7]
+    MouseX=df[5]
 
     # x = [d for d in x if re.match('\d+', d)]  # procura na lista os que sao numeros, para retirar os undefined
     # MouseX = np.array(x).astype(int)  # converte string para int, so é preciso isto se o ficheiro tiver undefineds
 
 
-    MouseY=df[6][::7]
+    MouseY=df[6]
 
     # print(MouseY)
     # MouseX=np.array(MouseX)
     # print(MouseX.iloc(1))
-    lastrowX=0
-    lastrowY=0
-    for rowX, rowY in zip(MouseX,MouseY):
-        if rowX==lastrowX and rowY==lastrowY:
-            MouseX.drop(rowX)
-            MouseY.drop(rowY)
-
-        lastrowX=rowX
-        lastrowY=rowY
-
-        print(rowX)
-        print(rowY)
-        # print(i)
+    # lastrowX=0
+    # lastrowY=0
+    # for rowX, rowY in zip(MouseX,MouseY):
+    #     if rowX==lastrowX and rowY==lastrowY:
+    #         MouseX.drop(rowX)
+    #         MouseY.drop(rowY)
+    #
+    #     lastrowX=rowX
+    #     lastrowY=rowY
+    #
+    #     print(rowX)
+    #     print(rowY)
+    #     # print(i)
         # if (MouseX.iloc == MouseX[i+1]):
         #     del MouseX.iloc[i+1]
         #     del MouseY[i+1]
@@ -623,9 +618,33 @@ def createDictionary(df):
             MouseTime.append(0)
         else:
             MouseTime.append((df[11][i]/1000)-initial_time)
-    MouseTime=MouseTime[::7]
-    # print(diff(MouseTime))
-    # print(min(diff(MouseTime)))
+    # MouseTime=MouseTime[::7]
+    # print('x')
+    # print(len(MouseX))
+    # print('t')
+    # print(len(MouseTime))
+    MouseX = np.array(MouseX)
+    MouseY = np.array(MouseY)
+    lista_index=[]
+    for i in range(len(MouseX) - 1):
+        if (MouseX[i] == MouseX[i + 1]) and (MouseY[i] == MouseY[i + 1]):
+           lista_index.append(i+1)
+    # print(lista_index)
+    # print(diff(MouseX))
+    # print(diff(MouseY))
+    MouseX = np.delete(MouseX, lista_index)
+    MouseY = np.delete(MouseY, lista_index)
+    MouseTime = np.delete(MouseTime, lista_index)
+
+    # print('x new')
+    # print(len(MouseX))
+    # print('t new')
+    # print(len(MouseTime))
+
+
+
+    MouseTime.sort() #o sort do df nao esta a funcionar por alguma razao- isto garante que o MouseTime é sempre crescente
+    # print(min(pl.diff(MouseTime)))
     # print(numpy.isnan(MouseX).any())
 
     # mynewlist = [s for s in MouseX if s.isdigit()]
@@ -841,8 +860,8 @@ def updateHiddenDiv(regex0, regex1, regex2,  string, n_clicks):
 
             matches['matchInitial']=matchInitial.tolist()
             matches['matchFinal']= matchFinal.tolist()
-            print(len(string[0]))
-            print(matches)
+            # print(len(string[0]))
+            # print(matches)
 
 
     return json.dumps(matches, sort_keys=True)
@@ -921,8 +940,8 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
     global lastclick2
     matches=json.loads(matches)
     timevars_initial=json.loads(timevars_initial)
-    print(timevars_initial)
-    print(timevars_final.split())
+    # print(timevars_initial)
+    # print(timevars_final.split())
     timevars_final=timevars_final.split()
 
     if (n_clicks != None and len(timevars_final)>0):
@@ -930,7 +949,7 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
         index_tv=[]
         for i in range(len(timevars_final)): #para percorrer os varios sinais e saber os indices originais
             index_tv.append(timevars_initial.index(timevars_final[i]))
-        print(index_tv)
+        # print(index_tv)
 
         if(n_clicks>lastclick2 and len(matches)>0):
 
@@ -941,40 +960,44 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
             # print(matchFinal)
             # counter_subplot=0
             counter_subplot = 1
-            fig = tools.make_subplots(rows=len(index_tv), cols=1)
+            # fig = tools.make_subplots(rows=len(index_tv), cols=1)
             for j in index_tv:
 
-                matchInitial = np.array(matches['matchInitial'])[j]
-                matchFinal = np.array(matches['matchFinal'])[j]
+                matchInitial = np.array(matches['matchInitial'])
+                matchFinal = np.array(matches['matchFinal'])
                 print(matchInitial)
+                print(matches)
 
 
 
                 datax = np.array(data['data']['data'][j]['x'])
                 datay= np.array(data['data']['data'][j]['y'])
-                if (len(matchInitial)>0 and len(matchFinal)>0 ):
+                matches_final=[]
+                for i in range(len(matchFinal[j])): #cria uma lista com os indexes de todas as matches
+                    matches_final.extend(range(matchInitial[j][i], matchFinal[j][i])) #nao considera a matchFinal como match, seria preciso por +1 aqui
 
-                    for i in range(len(matchInitial)):
-                        print(matchInitial)
-                        traces.append(go.Scatter(  # match initial append
-                                x=datax[matchInitial[i]:matchFinal[i]], #NOTA TENHO DE TER EM CONTA SE QUISER MOSTRAR UM SINAL NAO TRATADO
-                                y=datay[matchInitial[i]:matchFinal[i]],
-                                # text=selected_option[0],
-                                mode='markers',
-                                opacity=0.7,
-                                marker=dict(
-                                    size=5,
-                                    color='#EAEBED',
-                                    line=dict(
-                                        width=2)
+                if (len(matchInitial[j])>0 and len(matchFinal[j])>0 ):
 
-                                ),
-                            #     # xaxis='x'+ str(counter),
-                            #     # yaxis='y1'+str(counter),
-                                name='Match'
 
-                            ))
-                        fig.append_trace(traces[0], counter_subplot, 1)
+                    traces.append(go.Scatter(  # match initial append
+                            x=datax[matches_final], #NOTA TENHO DE TER EM CONTA SE QUISER MOSTRAR UM SINAL NAO TRATADO
+                            y=datay[matches_final],
+                            # text=selected_option[0],
+                            mode='markers',
+                            opacity=0.7,
+                            marker=dict(
+                                size=5,
+                                color='#EAEBED',
+                                line=dict(
+                                    width=2)
+
+                            ),
+                        #     # xaxis='x'+ str(counter),
+                        #     # yaxis='y1'+str(counter),
+                            name='Match'
+
+                        ))
+                    # fig.append_trace(traces[0], counter_subplot, 1)
 
 
 
@@ -1034,27 +1057,26 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
                     # yaxis='y1' + str(counter),
                     name='Signal'
                 ))
-                # print('traces2')
-                fig.append_trace(traces[1], counter_subplot, 1)
-                print(counter_subplot)
+
+                # fig.append_trace(traces[1], counter_subplot, 1)
+                # print(counter_subplot)
                 counter_subplot = counter_subplot + 1
                 # fig['layout'].update(height=600, width=600)
-
-            return fig
-                # {
-                #     'data': traces,
-                #     'layout': go.Layout(
-                #         hovermode='closest',
-                #         shapes =DrawShapes(matchInitial,matchFinal,datax, datay, j),
-                        # autosize=True,
-                        # xaxis=dict(ticks='', showgrid=False, zeroline=False),
-                        # yaxis=dict(ticks='', showgrid=False, zeroline=False),
-                        # yaxis2=dict(
-                        #     domain=[0, 0.45],
-                        #     anchor='x2'
-                        # ),
-                        # xaxis2=dict(anchor='y2')
-                    # )}
+            print(j)
+            return {
+                    'data': traces,
+                    'layout': go.Layout(
+                        hovermode='closest',
+                        shapes =DrawShapes(matchInitial,matchFinal,datax, datay, j),
+                        autosize=True,
+                        xaxis=dict(ticks='', showgrid=False, zeroline=False),
+                        yaxis=dict(ticks='', showgrid=False, zeroline=False),
+                        yaxis2=dict(
+                            domain=[0, 0.45],
+                            anchor='x2'
+                        ),
+                        xaxis2=dict(anchor='y2')
+                    )}
 
         else:
             return {
@@ -1229,7 +1251,6 @@ def SymbolicConnotationStringParser(n_clicks, data, parse, parse1, parse2, time_
             CutString.append(parse1.split())
             CutString.append(parse2.split())
             selector=len(time_Vars)
-
             finalString=SCParser(CutString, selector, data)
 
             # for i in range(len(CutString)-1):
@@ -1262,6 +1283,7 @@ def PPProcessingParser(parse, selector, data, fs): #selector é para selecionar 
         for i in range(len(parse[j])):
             # print(data['data'][j]['y'])
             # print(parse[j])
+
             if (parse[j][i] == 'H'):
                 # Function Amplitude
 
@@ -1684,21 +1706,30 @@ def interpolate_graf(value, json_data, timevar, logic):
 
             if timevar[j] in listA:
 
-                for i in range (len(matchInitial[j])-1): #para iterar dentro do mm sinal entre as varias matches
-                    nova_lista[j].append(np.where( (time_array>= time_var['ttv'][matchInitial[j][i]]) & (time_array<= time_var['ttv'][matchFinal[j][i]]) ))
+                for i in range (len(matchInitial[j])): #para iterar dentro do mm sinal entre as varias matches
+                    if i ==len(matchInitial[j])-1:
+                        nova_lista[j].append(np.where( (time_array>= time_var['ttv'][matchInitial[j][i]]) & (time_array<= time_var['ttv'][matchFinal[j][i]-1]) ))
+                    else:
+                        nova_lista[j].append(np.where((time_array >= time_var['ttv'][matchInitial[j][i]]) & (time_array <= time_var['ttv'][matchFinal[j][i]])))
+
             if(timevar[j] in listB):
-                for i in range (len(matchInitial[j])-1): #esta a sair fora do sinal qd a match é o ultimo ponto, acho que nao esta correcto assim
-                    nova_lista[j].append(np.where( (time_array>= time_var['tt'][matchInitial[j][i]]) & (time_array<= time_var['tt'][matchFinal[j][i]]) )) #pus -1 porque estava a sair fora do vector
+                for i in range (len(matchInitial[j])): #esta a sair fora do sinal qd a match é o ultimo ponto, acho que nao esta correcto assim
+                    print(i)
+                    if i == len(matchInitial[j])-1:
+                        nova_lista[j].append(np.where((time_array >= time_var['tt'][matchInitial[j][i]]) & (time_array <= time_var['tt'][matchFinal[j][i]-1])))
+                    else:
+                        nova_lista[j].append(np.where( (time_array>= time_var['tt'][matchInitial[j][i]]) & (time_array<= time_var['tt'][matchFinal[j][i]]) )) #pus -1 porque estava a sair fora do vector
 
             flat_list[j]=np.concatenate(nova_lista[j], axis=1)[0]
-
+        # print(nova_lista)
+        # print(flat_list)
         flat_list = np.array(flat_list)
         final_list = []
 
         for i in range(len(flat_list)): #para remover a parte vazia dos vectores pq o filter nao funciona
             if len(flat_list[i])>0:
                 final_list.append(flat_list[i])
-
+        print(time_array[final_list])
 
 
 

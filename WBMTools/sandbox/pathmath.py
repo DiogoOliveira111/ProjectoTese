@@ -123,7 +123,7 @@ def get_s(x, y):
 	  float cumulative distance traveled.
 	"""
 	ds = pl.sqrt(pl.diff(x)**2+pl.diff(y)**2)
-	print(pl.unique(ds))
+	# print(pl.unique(ds))
 	# ds=pl.unique(ds)
 	s = pl.cumsum(pl.concatenate(([0], ds)))
 
