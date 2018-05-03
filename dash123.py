@@ -165,6 +165,47 @@ def UpdateTimeVarGraph(traces, selected_option):
             line={'width': 2},
             name=str(selected_option)
         ))
+    elif (str(selected_option) in ("xs, ys")):
+        traces.append(go.Scatter(
+            x=space_var['ss'],
+            y=space_var[str(selected_option)],
+            text=selected_option,
+            opacity=0.7,
+            # marker={
+            #     'size': 5,
+            #     'line': {'width': 0.5, 'color': 'white'}
+            # },
+            line={'width': 2},
+            name=str(selected_option)
+        ))
+    elif(str(selected_option) =='angles'):
+        traces.append(go.Scatter(
+            x=space_var['ss'][:-1],
+            y=space_var[str(selected_option)],
+            text=selected_option,
+            opacity=0.7,
+            # marker={
+            #     'size': 5,
+            #     'line': {'width': 0.5, 'color': 'white'}
+            # },
+            line={'width': 2},
+            name=str(selected_option)
+        ))
+    elif(str(selected_option)=='curvatures'):
+        traces.append(go.Scatter(
+            x=space_var['ss'][:-2],
+            y=space_var[str(selected_option)],
+            text=selected_option,
+            opacity=0.7,
+            # marker={
+            #     'size': 5,
+            #     'line': {'width': 0.5, 'color': 'white'}
+            # },
+            line={'width': 2},
+            name=str(selected_option)
+        ))
+
+
 
     return traces
 
@@ -175,7 +216,11 @@ def createLayoutTimevar(value):
          jerk='Jerk',
          a='Acceleration in time',
          xt='X position in time',
-         yt='Y position in time'
+         yt='Y position in time',
+        xs='X interpolated in time',
+        ys='Y interpolated in time',
+        curvatures='Curvatures',
+        angles='Angles'
          )
     layout=go.Layout(
             # legend={'x': 0, 'y': 1},
@@ -544,7 +589,12 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                 {'label': 'X position in t', 'value': 'xt'},
                 {'label': 'Y Position in t', 'value': 'yt'},
                 {'label' : 'Velocity', 'value': 'vt'},
-                {'label' : 'Acceleration', 'value': 'a'}
+                {'label' : 'Acceleration', 'value': 'a'},
+                {'label' : 'X interpolated in space', 'value': 'xs'},
+                {'label' : 'Y interpolated in space', 'value': 'ys'},
+                {'label' : 'Angles', 'value': 'angles'},
+                {'label' : 'Curvatures', 'value': 'curvatures'},
+
             ],
             multi=True,
             placeholder="",
@@ -644,10 +694,8 @@ def createDictionary(df):
 
 
     MouseTime.sort() #o sort do df nao esta a funcionar por alguma razao- isto garante que o MouseTime é sempre crescente
-    # print(min(pl.diff(MouseTime)))
-    # print(numpy.isnan(MouseX).any())
 
-    # mynewlist = [s for s in MouseX if s.isdigit()]
+
 
 
 
@@ -655,11 +703,26 @@ def createDictionary(df):
 
     dM = pd.DataFrame.from_dict(MouseDict)
     time_var, space_var = interpolate_data(dM, t_abandon=20)
-    # print(pl.diff(MouseX))
-    # print(pl.diff(MouseY))
-    # print(np.where(pl.diff(MouseX)==0 and pl.diff(MouseY)==0))
-    # print(space_var['w'])
-    # print(space_var['straightness'])
+
+    # print(len(space_var['w']))
+
+    print(len(space_var['straightness']))
+    print(len(space_var['l_strokes']))
+    print((space_var['straightness'].tolist()).index(max(space_var['straightness'])))
+    print(np.cumsum(space_var['l_strokes'][0:12]))
+    a=np.cumsum(space_var['l_strokes'][0:12])
+    print(a[-1])
+    # print(space_var['ss'].index(a[-1]))
+    print(len(MouseDict['x']))
+    print(len(space_var['s']))
+    print(len(space_var['ss']))
+    # print(len(space_var['xs']))
+    # print(len(space_var['angles']))
+    # print(len(space_var['curvatures']))
+    # print(len(time_var['tt']))
+    # print(len(time_var['ttv']))
+    # print(space_var['ss'])
+    # print(space_var['s'])
     cleanedList = [x for x in space_var['straightness'] if str(x) != 'nan']
 
     # print(len(print(space_var['straightness'])))
@@ -790,11 +853,22 @@ def updateDropdownSearch(selected_options):
          xt='X position in time',
          yt='Y position in time'
          )
+    spaceVar_Dict=dict(
+        xs='X interpolated in space',
+        ys='Y interpolated in space',
+        angles='Angles',
+        curvatures='Curvature'
+    )
+
     current_options=[]
     # print(selected_options)
     for i in range(len(selected_options)):
+        if selected_options[i] in timeVar_Dict:
 
-        current_options.append({'label': timeVar_Dict[str(selected_options[i])], 'value': selected_options[i]})
+            current_options.append({'label': timeVar_Dict[str(selected_options[i])], 'value': selected_options[i]})
+        if selected_options[i] in spaceVar_Dict:
+            current_options.append({'label': spaceVar_Dict[str(selected_options[i])], 'value': selected_options[i]})
+
     if len(selected_options) == 2: #deve haver uma forma melhor de iterar isto para que independentemente da qtd de sinais escolhidos
             # for j in range(len(selected_options)):
         current_options.append({'label':timeVar_Dict[str(selected_options[0])]+ " and "+ timeVar_Dict[str(selected_options[1])], 'value': selected_options[0]+ " " +selected_options[1]})
@@ -845,7 +919,9 @@ def updateHiddenDiv(regex0, regex1, regex2,  string, n_clicks):
         if (n_clicks > lastclick2 and len(string)>0):
             matchInitial = [[],[],[]]
             matchFinal = [[],[],[]]
-
+            print(regex)
+            print(len(regex))
+            print(string)
             for j in range(len(regex)): #itera nos varios sinais
                 regit = re.finditer(regex[j], string[j])
 
@@ -953,20 +1029,20 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
 
         if(n_clicks>lastclick2 and len(matches)>0):
 
-            traces = []
+            traces_matches = []
+            traces=[]
 
 
-            # print(matchInitial)
-            # print(matchFinal)
-            # counter_subplot=0
+
             counter_subplot = 1
-            # fig = tools.make_subplots(rows=len(index_tv), cols=1)
+            fig = tools.make_subplots(rows=len(index_tv), cols=1)
             for j in index_tv:
+                print(j)
 
                 matchInitial = np.array(matches['matchInitial'])
                 matchFinal = np.array(matches['matchFinal'])
-                print(matchInitial)
-                print(matches)
+                # print(matchInitial)
+                # print(matches)
 
 
 
@@ -979,7 +1055,7 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
                 if (len(matchInitial[j])>0 and len(matchFinal[j])>0 ):
 
 
-                    traces.append(go.Scatter(  # match initial append
+                    traces_matches.append(go.Scatter(  # match initial append
                             x=datax[matches_final], #NOTA TENHO DE TER EM CONTA SE QUISER MOSTRAR UM SINAL NAO TRATADO
                             y=datay[matches_final],
                             # text=selected_option[0],
@@ -987,7 +1063,7 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
                             opacity=0.7,
                             marker=dict(
                                 size=5,
-                                color='#EAEBED',
+                                color='#6666ff',
                                 line=dict(
                                     width=2)
 
@@ -997,7 +1073,8 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
                             name='Match'
 
                         ))
-                    # fig.append_trace(traces[0], counter_subplot, 1)
+
+                    # fig.append_trace(traces_matches[0], counter_subplot, 1)
 
 
 
@@ -1057,26 +1134,39 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
                     # yaxis='y1' + str(counter),
                     name='Signal'
                 ))
+                print('counter')
+                print(counter_subplot)
 
-                # fig.append_trace(traces[1], counter_subplot, 1)
-                # print(counter_subplot)
+                # print(traces[2])
+                if(counter_subplot==1):
+                    fig.append_trace(traces_matches[0], counter_subplot, 1) #subplot das matches
+                    fig.append_trace(traces[0], counter_subplot, 1) #subplot do sinal
+                elif(counter_subplot==2):
+                    fig.append_trace(traces_matches[1], counter_subplot, 1)
+                    fig.append_trace(traces[1], counter_subplot, 1)
+                elif(counter_subplot==3):
+                    fig.append_trace(traces_matches[2], counter_subplot, 1)
+                    fig.append_trace(traces[2], counter_subplot, 1)
+
+
                 counter_subplot = counter_subplot + 1
                 # fig['layout'].update(height=600, width=600)
-            print(j)
-            return {
-                    'data': traces,
-                    'layout': go.Layout(
-                        hovermode='closest',
-                        shapes =DrawShapes(matchInitial,matchFinal,datax, datay, j),
-                        autosize=True,
-                        xaxis=dict(ticks='', showgrid=False, zeroline=False),
-                        yaxis=dict(ticks='', showgrid=False, zeroline=False),
-                        yaxis2=dict(
-                            domain=[0, 0.45],
-                            anchor='x2'
-                        ),
-                        xaxis2=dict(anchor='y2')
-                    )}
+
+            return fig
+            # {
+            #         'data': traces,
+            #         'layout': go.Layout(
+            #             hovermode='closest',
+            #             shapes =DrawShapes(matchInitial,matchFinal,datax, datay, j),
+            #             autosize=True,
+            #             xaxis=dict(ticks='', showgrid=False, zeroline=False),
+            #             yaxis=dict(ticks='', showgrid=False, zeroline=False),
+            #             yaxis2=dict(
+            #                 domain=[0, 0.45],
+            #                 anchor='x2'
+            #             ),
+            #             xaxis2=dict(anchor='y2')
+            #         )}
 
         else:
             return {
@@ -1539,9 +1629,23 @@ def interpolate_graf(value, json_data, timevar, logic):
                     color='white',
                     line=dict(
                         width=1)
-                )
+                ),
+
 
             ))
+            traces.append(go.Scatter(
+                y=MouseDict['y'][614:670],
+                x=MouseDict['x'][614:670],
+                name='Position',
+                mode='markers',
+                opacity=0.7,
+                marker=dict(
+                    size=5,
+                    color='red',
+                    line=dict(
+                        width=1)
+                        )
+                ))
             layout= go.Layout(
                 title='Positional Map',
                 xaxis=dict(
@@ -1714,22 +1818,20 @@ def interpolate_graf(value, json_data, timevar, logic):
 
             if(timevar[j] in listB):
                 for i in range (len(matchInitial[j])): #esta a sair fora do sinal qd a match é o ultimo ponto, acho que nao esta correcto assim
-                    print(i)
                     if i == len(matchInitial[j])-1:
                         nova_lista[j].append(np.where((time_array >= time_var['tt'][matchInitial[j][i]]) & (time_array <= time_var['tt'][matchFinal[j][i]-1])))
                     else:
                         nova_lista[j].append(np.where( (time_array>= time_var['tt'][matchInitial[j][i]]) & (time_array<= time_var['tt'][matchFinal[j][i]]) )) #pus -1 porque estava a sair fora do vector
+            if (len(nova_lista[j])!=0):
+                flat_list[j]=np.concatenate(nova_lista[j], axis=1)[0]
 
-            flat_list[j]=np.concatenate(nova_lista[j], axis=1)[0]
-        # print(nova_lista)
-        # print(flat_list)
         flat_list = np.array(flat_list)
         final_list = []
 
         for i in range(len(flat_list)): #para remover a parte vazia dos vectores pq o filter nao funciona
             if len(flat_list[i])>0:
                 final_list.append(flat_list[i])
-        print(time_array[final_list])
+
 
 
 
