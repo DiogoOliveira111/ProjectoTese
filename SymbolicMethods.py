@@ -75,3 +75,13 @@ def AmpC(s, t, p='>'):
 
     return s1
 
+def absAmp(s, t):
+    s1=[]
+    for i in s:
+        if i>=t:
+            s1.append("1")
+        elif i<t:
+            s1.append("0")
+    return s1
+
+

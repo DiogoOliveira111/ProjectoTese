@@ -15,7 +15,7 @@ import plotly.figure_factory as ff
 import json
 import pandas as pd
 from ProcessingMethods import smooth, lowpass, highpass, bandpass
-from SymbolicMethods import DiffC, Diff2C, RiseAmp, AmpC
+from SymbolicMethods import DiffC, Diff2C, RiseAmp, AmpC, absAmp
 from AuxiliaryMethods import _plot, detect_peaks,merge_chars
 import base64
 import io
@@ -138,6 +138,9 @@ def DrawShapes(matchInitial, matchFinal, datax, datay, index):
 
 def UpdateTimeVarGraph(traces, selected_option):
     global time_var
+    global pauseVector
+    global MouseDict
+    print(MouseTime)
     if (str(selected_option) in ("vt, vx, vy, a, jerk")):
 
         traces.append(go.Scatter(
@@ -204,6 +207,20 @@ def UpdateTimeVarGraph(traces, selected_option):
             line={'width': 2},
             name=str(selected_option)
         ))
+    elif (str(selected_option) == 'pauses'):
+        traces.append(go.Scatter(
+            x=MouseDict['t'][:-1],
+            y=pauseVector,
+            text=selected_option,
+            opacity=0.7,
+            marker={
+                'size': 5,
+                'line': {'width': 0.5, 'color': 'white'}
+            },
+            # line={'width': 2},
+            name=str(selected_option)
+        ))
+
 
 
 
@@ -220,7 +237,8 @@ def createLayoutTimevar(value):
         xs='X interpolated in time',
         ys='Y interpolated in time',
         curvatures='Curvatures',
-        angles='Angles'
+        angles='Angles',
+        pauses='Time of pauses'
          )
     layout=go.Layout(
             # legend={'x': 0, 'y': 1},
@@ -301,6 +319,7 @@ Div_XY_checklist=dcc.Checklist(
         {'label': 'Positional Map', 'value': 'XY'},
         {'label': 'Heatmap', 'value': 'heat'},
         {'label': 'Interpolate', 'value': 'interpolate'},
+        {'label': 'Clicks', 'value': 'clicks'},
         # {'label': 'Test', 'value': 'test'}
     ],
     values=['XY'],
@@ -477,10 +496,12 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                         }
                     ),
                 html.Div([
-                    html.Button('A', id='Amp', value='', style=styleB, title='Amplitude'),
+                    html.Button('%A', id='Amp', value='', style=styleB, title='Relative Amplitude'),
+                    html.Button('↥A', id='relAmp', style=styleB, title='Absolute Amplitude'),
                     html.Button('1D', id='diff1', style=styleB, title='1st Derivative'),
                     html.Button('2D', id='diff2', style=styleB, title='2nd Derivative'),
-                    html.Button('RA', id='riseamp', style=styleB, title='RiseAmp')]
+                    html.Button('RA', id='riseamp', style=styleB, title='RiseAmp'),
+                ]
                 ),
                 html.Div(id='SymbolicConnotationDiv', children= [
                     dcc.Input(id='SCtext',
@@ -594,6 +615,7 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                 {'label' : 'Y interpolated in space', 'value': 'ys'},
                 {'label' : 'Angles', 'value': 'angles'},
                 {'label' : 'Curvatures', 'value': 'curvatures'},
+                {'label' : 'Pauses', 'value': 'pauses'},
 
             ],
             multi=True,
@@ -615,12 +637,37 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
     )
 ])
 
+
+#TODO: POR ISTO NO SITIO
+def longest_consecutive_increasing(intvect):
+
+    max_so_far = 0
+    curr_count = []
+    max_pos = -1
+    last_i=0
+    #iterate through all integers in the vector
+    for counter1 in range(len(intvect)):
+        #case where we just started. No comparison needed yet.
+        if counter1 == 0:
+            pass
+        #case where we have an increase
+
+        elif (intvect[counter1]) == (last_i+1):
+            curr_count.append(intvect[counter1]-2)
+        last_i=intvect[counter1]
+
+    return curr_count
+
+
 #------------------------------------------------------
 #   Callback Functions
 #-----------------------------------------------------
 def createDictionary(df):
     global time_var, space_var
     global MouseDict
+    global clickIndex
+    global pauseVector  # TODO fazer isto sem vars globais
+
     MouseX=[]
     MouseY = []
     MouseTime = []
@@ -636,7 +683,7 @@ def createDictionary(df):
 
 
     MouseY=df[6]
-
+    MouseClicks=df[1]
     # print(MouseY)
     # MouseX=np.array(MouseX)
     # print(MouseX.iloc(1))
@@ -669,23 +716,42 @@ def createDictionary(df):
         else:
             MouseTime.append((df[11][i]/1000)-initial_time)
     # MouseTime=MouseTime[::7]
-    # print('x')
-    # print(len(MouseX))
-    # print('t')
-    # print(len(MouseTime))
+
     MouseX = np.array(MouseX)
     MouseY = np.array(MouseY)
+    MouseClicks=np.array(MouseClicks)
+
+
     lista_index=[]
-    for i in range(len(MouseX) - 1):
+    for i in range(len(MouseX) - 1): #saber index de duplicates
         if (MouseX[i] == MouseX[i + 1]) and (MouseY[i] == MouseY[i + 1]):
            lista_index.append(i+1)
-    # print(lista_index)
-    # print(diff(MouseX))
-    # print(diff(MouseY))
-    MouseX = np.delete(MouseX, lista_index)
+
+    MouseX = np.delete(MouseX, lista_index) #remove duplicates
     MouseY = np.delete(MouseY, lista_index)
     MouseTime = np.delete(MouseTime, lista_index)
 
+    print(lista_index)
+
+    lista_incrementing=longest_consecutive_increasing(lista_index) #lista de duplicates seguidos
+    for i in lista_incrementing:
+        if MouseClicks[i]==1:
+            print(i)
+            print(MouseClicks[i])
+            MouseClicks[i-1]=1
+
+
+
+    # print(MouseClicks)
+
+    MouseClicks=np.delete(MouseClicks, lista_index)
+
+    # print(MouseClicks)
+    clickIndex=[]
+    for i in range(len(MouseClicks)):
+        if MouseClicks[i]==1:
+            clickIndex.append(i)
+    print(clickIndex)
     # print('x new')
     # print(len(MouseX))
     # print('t new')
@@ -695,7 +761,27 @@ def createDictionary(df):
 
     MouseTime.sort() #o sort do df nao esta a funcionar por alguma razao- isto garante que o MouseTime é sempre crescente
 
+    numberStrokes=0
+    cutTime=[]
 
+    pauseVector = []
+    for i in range(len(MouseTime)-1):
+        if MouseTime[i+1]-MouseTime[i]>1: #pauses>1 segundo => nova stroke
+            numberStrokes=numberStrokes+1
+            cutTime.append(MouseTime[i]) #append do ultimo ponto antes da pause
+        pauseVector.append(MouseTime[i+1]-MouseTime[i]) #append dos tempos entre movimentos
+
+    cutIndex=[]
+    for i in range(len(cutTime)):
+        cutIndex.append(np.argmax(MouseTime>cutTime[i]))
+
+
+
+    print(numberStrokes)
+    print(cutTime)
+    print(cutIndex)
+    print(len(MouseTime))
+    print(len(pauseVector))
 
 
 
@@ -721,8 +807,8 @@ def createDictionary(df):
     # print(len(space_var['curvatures']))
     # print(len(time_var['tt']))
     # print(len(time_var['ttv']))
-    # print(space_var['ss'])
-    # print(space_var['s'])
+    print(space_var['ss'])
+    print(space_var['s'])
     cleanedList = [x for x in space_var['straightness'] if str(x) != 'nan']
 
     # print(len(print(space_var['straightness'])))
@@ -851,7 +937,8 @@ def updateDropdownSearch(selected_options):
          jerk='Jerk',
          a='Acceleration in time',
          xt='X position in time',
-         yt='Y position in time'
+         yt='Y position in time',
+        pauses='Pauses'
          )
     spaceVar_Dict=dict(
         xs='X interpolated in space',
@@ -937,7 +1024,7 @@ def updateHiddenDiv(regex0, regex1, regex2,  string, n_clicks):
             matches['matchInitial']=matchInitial.tolist()
             matches['matchFinal']= matchFinal.tolist()
             # print(len(string[0]))
-            # print(matches)
+            print(matches)
 
 
     return json.dumps(matches, sort_keys=True)
@@ -1051,7 +1138,7 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
                 matches_final=[]
                 for i in range(len(matchFinal[j])): #cria uma lista com os indexes de todas as matches
                     matches_final.extend(range(matchInitial[j][i], matchFinal[j][i])) #nao considera a matchFinal como match, seria preciso por +1 aqui
-
+                print(matches_final)
                 if (len(matchInitial[j])>0 and len(matchFinal[j])>0 ):
 
 
@@ -1244,9 +1331,12 @@ def SCParser(parse, selector, data):
 
         for i in range(len(parse[j])):
 
-            if (parse[j][i] == 'A'):
+            if (parse[j][i] == '%A'):
                 # function Amp
                 finalString[j].append(AmpC(data['data']['data'][j]['y'], float(parse[j][i + 1])))
+            elif (parse[j][i] == '↥A'):
+                # function Amp
+                finalString[j].append(absAmp(data['data']['data'][j]['y'], float(parse[j][i + 1])))
 
             elif (parse[j][i] == '1D'):
                 # Function 1st Derivative
@@ -1269,14 +1359,15 @@ def SCParser(parse, selector, data):
     dash.dependencies.Input('Amp', 'n_clicks'),
     dash.dependencies.Input('diff1', 'n_clicks'),
     dash.dependencies.Input('diff2', 'n_clicks'),
-    dash.dependencies.Input('riseamp', 'n_clicks')],
+    dash.dependencies.Input('riseamp', 'n_clicks'),
+    dash.dependencies.Input('relAmp', 'n_clicks')],
     [dash.dependencies.State('SCtext', 'value')]
 )
-def SymbolicConnotationWrite(a1,a2,a3,a4, finalStr):
-    global  preva1, preva2, preva3, preva4 #banhada com variaveis globais para funcionar, convem mudar
+def SymbolicConnotationWrite(a1,a2,a3,a4, a5, finalStr):
+    global  preva1, preva2, preva3, preva4, preva5 #banhada com variaveis globais para funcionar, convem mudar
     if(a1!= None): # tem o problema de nao limpar, se calhar precisa de um botao para limpar
         if(a1>preva1): #Amplitude
-            finalStr+= 'A '
+            finalStr+= '%A '
         preva1 = a1
 
     if (a2 != None): #1st derivative
@@ -1293,6 +1384,10 @@ def SymbolicConnotationWrite(a1,a2,a3,a4, finalStr):
         if (a4 >preva4):
             finalStr +="R "
         preva4 = a4
+    if (a5 != None):  # RiseAmp
+        if (a5 > preva4):
+            finalStr += "↥A "
+        preva5 = a5
     return str(finalStr)
 
 
@@ -1606,6 +1701,7 @@ def update_timevarfigure(selected_option):
 def interpolate_graf(value, json_data, timevar, logic):
     global MouseDict
     global space_var
+    global clickIndex
     matches = json.loads(json_data)
 
     timevar=json.loads(timevar)
@@ -1634,8 +1730,8 @@ def interpolate_graf(value, json_data, timevar, logic):
 
             ))
             traces.append(go.Scatter(
-                y=MouseDict['y'][614:670],
-                x=MouseDict['x'][614:670],
+                y=MouseDict['y'][667:693],
+                x=MouseDict['x'][667:693],
                 name='Position',
                 mode='markers',
                 opacity=0.7,
@@ -1780,12 +1876,27 @@ def interpolate_graf(value, json_data, timevar, logic):
                 line={'width': 2, 'color': 'black'},
                 name="Interpolated Position"
             ))
+        if (value[i] == 'clicks'):
+            print('ay')
+            traces.append(go.Scatter(
+                x=MouseDict['x'][clickIndex],
+                y=MouseDict['y'][clickIndex],
+                # text=selected_option[0],
+                opacity=0.7,
+                # marker={
+                #     'size': 5,
+                #     'line': {'width': 0.5, 'color': 'white'}
+                # },
+                line={'width': 2, 'color': 'black'},
+                name="Interpolated Position"
+            ))
 
 
 
 
 
     if(np.size(matches['matchInitial'])>0):
+
         # print(matches)
         lista_matches=[]
         # for i in range(len(matchInitial)): #No idea what the purpose of this is
@@ -1803,7 +1914,8 @@ def interpolate_graf(value, json_data, timevar, logic):
         listA=["vt", "vx", "vy", "a", "jerk"]
         listB=["xt", "yt"]
 
-
+        print(time_var['ttv'][matchInitial[0][0]])
+        print(time_var['ttv'][matchFinal[0][0]])
 
         for j in range(len(timevar)): #para iterar entre os varios sinais
 
@@ -1822,6 +1934,7 @@ def interpolate_graf(value, json_data, timevar, logic):
                         nova_lista[j].append(np.where((time_array >= time_var['tt'][matchInitial[j][i]]) & (time_array <= time_var['tt'][matchFinal[j][i]-1])))
                     else:
                         nova_lista[j].append(np.where( (time_array>= time_var['tt'][matchInitial[j][i]]) & (time_array<= time_var['tt'][matchFinal[j][i]]) )) #pus -1 porque estava a sair fora do vector
+
             if (len(nova_lista[j])!=0):
                 flat_list[j]=np.concatenate(nova_lista[j], axis=1)[0]
 
@@ -1831,7 +1944,7 @@ def interpolate_graf(value, json_data, timevar, logic):
         for i in range(len(flat_list)): #para remover a parte vazia dos vectores pq o filter nao funciona
             if len(flat_list[i])>0:
                 final_list.append(flat_list[i])
-
+        print(final_list)
 
 
 
