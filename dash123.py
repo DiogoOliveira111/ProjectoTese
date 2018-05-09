@@ -24,6 +24,7 @@ import datetime
 from numpy import diff
 from plotly import tools
 import pylab as pl
+from itertools import groupby, count
 
 traces =[]
 preva1= 0
@@ -114,7 +115,7 @@ colors = {
 
 def DrawShapes(matchInitial, matchFinal, datax, datay, index):
     shapes=[]
-    print(len(matchInitial[index]))
+    # print(len(matchInitial[index]))
     for i in range(len(matchInitial[index])):
         shape={
             'type': 'rect',
@@ -136,11 +137,12 @@ def DrawShapes(matchInitial, matchFinal, datax, datay, index):
     return shapes
 
 
-def UpdateTimeVarGraph(traces, selected_option):
+def UpdateTimeVarGraph(traces, selected_option,clicks):
     global time_var
     global pauseVector
     global MouseDict
-    print(MouseTime)
+    global clickIndex
+    # print(MouseTime)
     if (str(selected_option) in ("vt, vx, vy, a, jerk")):
 
         traces.append(go.Scatter(
@@ -155,6 +157,21 @@ def UpdateTimeVarGraph(traces, selected_option):
             line={'width': 2},
             name=str(selected_option)
         ))
+        # if (clicks == 1):
+        #     traces.append(go.Scatter(
+        #         x=time_var['ttv'][clickIndex],
+        #         y=time_var[selected_option][clickIndex],
+        #         text=selected_option,
+        #         mode='markers',
+        #         opacity=0.7,
+        #         marker={
+        #             'size': 5,
+        #             'line': {'width': 0.5, 'color': 'white'}
+        #         },
+        #         # line={'width': 2},
+        #         name=str(selected_option)
+        #     ))
+
     elif (str(selected_option) in ("xt, yt")):
         traces.append(go.Scatter(
             x=time_var['tt'],
@@ -168,6 +185,19 @@ def UpdateTimeVarGraph(traces, selected_option):
             line={'width': 2},
             name=str(selected_option)
         ))
+        # if (clicks == 1):
+        #     traces.append(go.Scatter(
+        #         x=time_var['tt'][clickIndex],
+        #         y=time_var[str(selected_option)][clickIndex],
+        #         text=selected_option,
+        #         opacity=0.7,
+        #         marker={
+        #             'size': 5,
+        #             'line': {'width': 0.5, 'color': 'white'}
+        #         },
+        #         # line={'width': 2},
+        #         name=str(selected_option)
+        #     ))
     elif (str(selected_option) in ("xs, ys")):
         traces.append(go.Scatter(
             x=space_var['ss'],
@@ -180,7 +210,20 @@ def UpdateTimeVarGraph(traces, selected_option):
             # },
             line={'width': 2},
             name=str(selected_option)
-        ))
+        )) #n sei ha correspondencia entre os indexes do click e as timevar
+        # if (clicks == 1):
+        #     traces.append(go.Scatter(
+        #         x=MouseDict['t'][clickIndex],
+        #         y=pauseVector,
+        #         text=selected_option,
+        #         opacity=0.7,
+        #         marker={
+        #             'size': 5,
+        #             'line': {'width': 0.5, 'color': 'white'}
+        #         },
+        #         # line={'width': 2},
+        #         name=str(selected_option)
+        #     ))
     elif(str(selected_option) =='angles'):
         traces.append(go.Scatter(
             x=space_var['ss'][:-1],
@@ -194,6 +237,19 @@ def UpdateTimeVarGraph(traces, selected_option):
             line={'width': 2},
             name=str(selected_option)
         ))
+        # if (clicks == 1):
+        #     traces.append(go.Scatter(
+        #         x=MouseDict['t'][clickIndex],
+        #         y=pauseVector,
+        #         text=selected_option,
+        #         opacity=0.7,
+        #         marker={
+        #             'size': 5,
+        #             'line': {'width': 0.5, 'color': 'white'}
+        #         },
+        #         # line={'width': 2},
+        #         name=str(selected_option)
+        #     ))
     elif(str(selected_option)=='curvatures'):
         traces.append(go.Scatter(
             x=space_var['ss'][:-2],
@@ -207,6 +263,19 @@ def UpdateTimeVarGraph(traces, selected_option):
             line={'width': 2},
             name=str(selected_option)
         ))
+        # if (clicks == 1):
+        #     traces.append(go.Scatter(
+        #         x=MouseDict['t'][clickIndex],
+        #         y=pauseVector,
+        #         text=selected_option,
+        #         opacity=0.7,
+        #         marker={
+        #             'size': 5,
+        #             'line': {'width': 0.5, 'color': 'white'}
+        #         },
+        #         # line={'width': 2},
+        #         name=str(selected_option)
+        #     ))
     elif (str(selected_option) == 'pauses'):
         traces.append(go.Scatter(
             x=MouseDict['t'][:-1],
@@ -220,13 +289,29 @@ def UpdateTimeVarGraph(traces, selected_option):
             # line={'width': 2},
             name=str(selected_option)
         ))
+        # if (clicks == 1):
+        #     traces.append(go.Scatter(
+        #         x=MouseDict['t'][:-1][clickIndex],
+        #         y=pauseVector[clickIndex],
+        #         text=selected_option,
+        #         opacity=0.7,
+        #         marker={
+        #             'size': 5,
+        #             'line': {'width': 0.5, 'color': 'white'}
+        #         },
+        #         # line={'width': 2},
+        #         name=str(selected_option)
+        #     ))
 
 
 
 
     return traces
 
-def createLayoutTimevar(value):
+def createLayoutTimevar(value, clicks, traces):
+    global clickIndex
+    global MouseDict
+    print(traces)
     Titles=dict(vt='Velocity in time',
          vy='Velocity in Y',
          vx='Velocity in X',
@@ -240,7 +325,25 @@ def createLayoutTimevar(value):
         angles='Angles',
         pauses='Time of pauses'
          )
+    shapes = []
+    if clicks==1:
+
+        for i in clickIndex:
+            shape={
+                'type': 'line',
+                'x0':MouseDict['t'][i],
+                'y0': max(traces[0]['y']),
+                'x1': MouseDict['t'][i],
+                'y1': min(traces[0]['y']),
+                'fillcolor': '#A7CCED',
+                'opacity': 0.7,
+                'line': {
+                    'width': 1,
+                    # 'color': 'rgb(55, 128, 191)',
+                    }}
+            shapes.append(shape)
     layout=go.Layout(
+            shapes=shapes,
             # legend={'x': 0, 'y': 1},
             hovermode='closest',
             showlegend = True,
@@ -324,6 +427,24 @@ Div_XY_checklist=dcc.Checklist(
     ],
     values=['XY'],
     style={'display':'inline-block', 'width':'100%'})
+
+Div_XY_uploadimage= dcc.Upload(html.Button('Upload Image'),
+        id='upload-image',
+        # children=html.Div([
+        #     'Select Image File'
+        # ]),
+        style={
+            'width': '50%',
+            'height': '60px',
+            # 'lineHeight': '60px',
+            # 'borderWidth': '1px',
+            # 'borderStyle': 'dashed',
+            # 'borderRadius': '5px',
+            'textAlign': 'center',
+
+            'margin': '10px'
+        },
+    )
 
 Div_Upload= dcc.Upload(
         id='upload-data',
@@ -424,6 +545,7 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                             html.Div([
                                 Div_XY,
                                 Div_XY_checklist,
+                                Div_XY_uploadimage,
 
 
                                 Div_XY_interpolate,
@@ -658,6 +780,9 @@ def longest_consecutive_increasing(intvect):
 
     return curr_count
 
+def find_subsequences(lista):
+    return [list(g) for k, g in groupby(lista, key=lambda n, c=count(): n - next(c))]
+
 
 #------------------------------------------------------
 #   Callback Functions
@@ -731,18 +856,32 @@ def createDictionary(df):
     MouseY = np.delete(MouseY, lista_index)
     MouseTime = np.delete(MouseTime, lista_index)
 
-    print(lista_index)
-
-    lista_incrementing=longest_consecutive_increasing(lista_index) #lista de duplicates seguidos
-    for i in lista_incrementing:
-        if MouseClicks[i]==1:
-            print(i)
-            print(MouseClicks[i])
-            MouseClicks[i-1]=1
 
 
+    lista_incrementing=longest_consecutive_increasing(lista_index) #lista de duplicates seguidos TA MAL
+    # print(find_subsequences((lista_index)))
+    subsequence_list=find_subsequences(lista_index)
 
-    # print(MouseClicks)
+    for i in subsequence_list:
+        if len(i)>1: #ve as subsequences maiores que 1
+            for j in range(len(i)):
+                if(MouseClicks[i[j]] == 1): # ve se existe um click nessa subsequence
+                    MouseClicks[i[0]-1]=1 # mete o click no index anterior ao primeiro(para n ser eliminado)
+        elif len(i)==1:
+            if MouseClicks[i]==1: #no caso de haver um click no index a ser eliminado
+                MouseClicks[i[0]-1]=1
+
+
+
+
+    # print(lista_incrementing)
+    # for i in lista_incrementing:
+    #     if MouseClicks[i]==1:
+    #         print(i)
+    #         print(MouseClicks[i])
+    #         MouseClicks[i-1]=1
+
+
 
     MouseClicks=np.delete(MouseClicks, lista_index)
 
@@ -751,7 +890,7 @@ def createDictionary(df):
     for i in range(len(MouseClicks)):
         if MouseClicks[i]==1:
             clickIndex.append(i)
-    print(clickIndex)
+    # print(clickIndex)
     # print('x new')
     # print(len(MouseX))
     # print('t new')
@@ -772,16 +911,16 @@ def createDictionary(df):
         pauseVector.append(MouseTime[i+1]-MouseTime[i]) #append dos tempos entre movimentos
 
     cutIndex=[]
-    for i in range(len(cutTime)):
+    for i in range(len(cutTime)): #index das pauses
         cutIndex.append(np.argmax(MouseTime>cutTime[i]))
 
 
 
-    print(numberStrokes)
-    print(cutTime)
-    print(cutIndex)
-    print(len(MouseTime))
-    print(len(pauseVector))
+    # print(numberStrokes)
+    # print(cutTime)
+    # print(cutIndex)
+    # print(len(MouseTime))
+    # print(len(pauseVector))
 
 
 
@@ -790,6 +929,8 @@ def createDictionary(df):
     dM = pd.DataFrame.from_dict(MouseDict)
     time_var, space_var = interpolate_data(dM, t_abandon=20)
 
+    print(len(MouseTime))
+    print(len(time_var['ttv']))
     # print(len(space_var['w']))
 
     print(len(space_var['straightness']))
@@ -1667,22 +1808,33 @@ def showPreProcess1(selected_option):
 
 @app.callback(
     dash.dependencies.Output('timevar_graph', 'figure'),
-    [dash.dependencies.Input('dropdown_timevar', 'value')])
-def update_timevarfigure(selected_option):
+    [dash.dependencies.Input('dropdown_timevar', 'value'),
+     dash.dependencies.Input('checklistheatmap', 'values')])
+def update_timevarfigure(selected_option, values):
 
 
     traces=[]
     layout={}
+    clicks=0
+    if('clicks' in values):
+        clicks=1
 
     if(len(selected_option) == 1):
 
-        traces = UpdateTimeVarGraph(traces, selected_option[0])
-        layout= createLayoutTimevar(selected_option[0])
+        traces = UpdateTimeVarGraph(traces, selected_option[0], clicks)
+
+        layout= createLayoutTimevar(selected_option[0], clicks, traces)
 
     if (len(selected_option)>1):
-         for i in range(np.size(selected_option)):
-            traces = UpdateTimeVarGraph(traces, selected_option[i])
-         layout=createLayoutTimevar(selected_option[0])
+        for i in range(np.size(selected_option)):
+            traces = UpdateTimeVarGraph(traces, selected_option[i], clicks)
+
+        # for i in range(len(traces-1)):
+        #     max_rel=0
+        #     if max(traces[i]['y'])>len(traces[i+1]['y'])
+        #         biggest_traces=i
+
+        layout=createLayoutTimevar(selected_option[0], clicks, traces)
 
     return {
         'data':traces,
@@ -1695,13 +1847,16 @@ def update_timevarfigure(selected_option):
      [dash.dependencies.Input('checklistheatmap', 'values'),
      dash.dependencies.Input('hiddenDiv', 'children'),
      dash.dependencies.Input('hiddenDiv_timevar', 'children'),
-    dash.dependencies.Input('DropdownAndOr', 'value')
+    dash.dependencies.Input('DropdownAndOr', 'value'),
+      dash.dependencies.Input('upload-image', 'contents')
      # dash.dependencies.Input('sliderpos', 'value')
      ])
-def interpolate_graf(value, json_data, timevar, logic):
+def interpolate_graf(value, json_data, timevar, logic, image):
     global MouseDict
     global space_var
     global clickIndex
+    # if image!=None:
+    #     print('banana')
     matches = json.loads(json_data)
 
     timevar=json.loads(timevar)
@@ -1763,6 +1918,41 @@ def interpolate_graf(value, json_data, timevar, logic):
                 autosize=True,
                 hovermode='closest',
             )
+            if image is not None: #N funciona qd tento fazer append de apenas a img ao layout
+                print(image)
+                layout=go.Layout(
+                    title='Positional Map',
+                    xaxis=dict(
+                        title='X Axis',
+                        titlefont=dict(
+                            family='Courier New, monospace',
+                            size=14,
+                            color='#7f7f7f'
+                        ),
+                        ticks='', showgrid=False, zeroline=False),
+                    yaxis=dict(
+                        title='Y Axis',
+                        titlefont=dict(
+                            family='Courier New, monospace',
+                            size=14,
+                            color='#7f7f7f'
+                        ),
+                        ticks='', showgrid=False, zeroline=False),
+                    autosize=True,
+                    hovermode='closest',
+                    images=[
+                        dict(
+                            source=image,
+                            xref="x",
+                            yref="y",
+                            x=0,
+                            y=4,
+                            sizex=5,
+                            sizey=10,
+                            sizing="stretch",
+                            opacity=0.5,
+                            layer="below"
+                    )])
 
         if(value[i]=='interpolate'):
             traces.append(go.Scatter(
@@ -1798,6 +1988,19 @@ def interpolate_graf(value, json_data, timevar, logic):
                 autosize=True,
                 hovermode='closest',
             )
+            if image is not None:
+                layout.append(go.Layout(
+                    images=[dict(
+                        source=image,
+                        xref="x",
+                        yref="y",
+                        x=0,
+                        y=3,
+                        sizex=2,
+                        sizey=2,
+                        sizing="stretch",
+                        opacity=0.5,
+                        layer="below")]))
 
         if(value[i]=='heat'):
             x = space_var['xs']
@@ -1863,6 +2066,19 @@ def interpolate_graf(value, json_data, timevar, logic):
                     zeroline=False
                 )
             )
+            if image is not None:
+                layout.append(go.Layout(
+                    images=[dict(
+                        source=image,
+                        xref="x",
+                        yref="y",
+                        x=0,
+                        y=3,
+                        sizex=2,
+                        sizey=2,
+                        sizing="stretch",
+                        opacity=0.5,
+                        layer="below")]))
         if(value[i]=='test'):
             traces.append(go.Scatter(
                 x=MouseDict['t'],
@@ -1877,19 +2093,33 @@ def interpolate_graf(value, json_data, timevar, logic):
                 name="Interpolated Position"
             ))
         if (value[i] == 'clicks'):
-            print('ay')
             traces.append(go.Scatter(
                 x=MouseDict['x'][clickIndex],
                 y=MouseDict['y'][clickIndex],
                 # text=selected_option[0],
+                mode='markers',
                 opacity=0.7,
-                # marker={
-                #     'size': 5,
-                #     'line': {'width': 0.5, 'color': 'white'}
-                # },
-                line={'width': 2, 'color': 'black'},
-                name="Interpolated Position"
+                marker={
+                    'symbol' : 'x',
+                    'size': 10,
+                    'line': {'width': 1, 'color': 'black'}
+                },
+                # line={'width': 2, 'color': 'black'},
+                name="Clicks"
             ))
+            if image is not None:
+                layout.append(go.Layout(
+                    images=[dict(
+                        source=image,
+                        xref="x",
+                        yref="y",
+                        x=0,
+                        y=3,
+                        sizex=2,
+                        sizey=2,
+                        sizing="stretch",
+                        opacity=0.5,
+                        layer="below")]))
 
 
 
