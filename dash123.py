@@ -139,10 +139,18 @@ def DrawShapes(matchInitial, matchFinal, datax, datay, index):
 
 def UpdateTimeVarGraph(traces, selected_option,clicks):
     global time_var
+    global space_var
     global pauseVector
     global MouseDict
     global clickIndex
+    global cutIndex
     # print(MouseTime)
+    # straightness_replicated=[]
+    # # for i in range(len(space_var['straightness'])):
+    # #     straightness_replicated.append([space_var['straightness']][i] * cutIndex[i])
+    # # print('ay')
+    # print(straightness_replicated[0])
+
     if (str(selected_option) in ("vt, vx, vy, a, jerk")):
 
         traces.append(go.Scatter(
@@ -302,16 +310,63 @@ def UpdateTimeVarGraph(traces, selected_option,clicks):
         #         # line={'width': 2},
         #         name=str(selected_option)
         #     ))
+    elif (str(selected_option)=='straight'):
 
+        size_time=len(MouseDict['t'])
+        straightness=np.zeros(size_time)
+        for i in range(len(cutIndex)):
+            if i ==0:
+                straightness[0:cutIndex[i]]=space_var['straightness'][0]
 
+            elif i==len(cutIndex)-1:
+                straightness[cutIndex[i]:size_time] = space_var['straightness'][i]
 
+            else:
+                straightness[cutIndex[i]:cutIndex[i+1]] = space_var['straightness'][i]
+
+        traces.append(go.Scatter(
+            x=MouseDict['t'],
+            y=straightness,
+            text=selected_option,
+            opacity=0.7,
+            marker={
+                'size': 5,
+                'line': {'width': 0.5, 'color': 'white'}
+            },
+            # line={'width': 2},
+            name=str(selected_option)))
+
+    elif (str(selected_option)=='lenStrokes'):
+
+        size_time=len(MouseDict['t'])
+        lenStrokes=np.zeros(size_time)
+        for i in range(len(cutIndex)):
+            if i ==0:
+                lenStrokes[0:cutIndex[i]]=space_var['l_strokes'][0]
+
+            elif i==len(cutIndex)-1:
+                lenStrokes[cutIndex[i]:size_time] = space_var['l_strokes'][i]
+
+            else:
+                lenStrokes[cutIndex[i]:cutIndex[i+1]] = space_var['l_strokes'][i]
+
+        traces.append(go.Scatter(
+            x=MouseDict['t'],
+            y=lenStrokes/1000,
+            text=selected_option,
+            opacity=0.7,
+            marker={
+                'size': 5,
+                'line': {'width': 0.5, 'color': 'white'}
+            },
+            # line={'width': 2},
+            name=str(selected_option)))
 
     return traces
 
 def createLayoutTimevar(value, clicks, traces):
     global clickIndex
     global MouseDict
-    print(traces)
     Titles=dict(vt='Velocity in time',
          vy='Velocity in Y',
          vx='Velocity in X',
@@ -323,7 +378,9 @@ def createLayoutTimevar(value, clicks, traces):
         ys='Y interpolated in time',
         curvatures='Curvatures',
         angles='Angles',
-        pauses='Time of pauses'
+        pauses='Time of pauses',
+        straight= 'Straightness',
+        lenStrokes='Length of Strokes'
          )
     shapes = []
     if clicks==1:
@@ -738,6 +795,8 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                 {'label' : 'Angles', 'value': 'angles'},
                 {'label' : 'Curvatures', 'value': 'curvatures'},
                 {'label' : 'Pauses', 'value': 'pauses'},
+                {'label' : 'Straightness', 'value': 'straight'},
+                {'label' : 'Length of Strokes', 'value': 'lenStrokes'}
 
             ],
             multi=True,
@@ -789,6 +848,7 @@ def find_subsequences(lista):
 #-----------------------------------------------------
 def createDictionary(df):
     global time_var, space_var
+    global cutIndex
     global MouseDict
     global clickIndex
     global pauseVector  # TODO fazer isto sem vars globais
@@ -829,7 +889,7 @@ def createDictionary(df):
         #     del MouseX.iloc[i+1]
         #     del MouseY[i+1]
 
-    #         print('hey')
+
 
     # y = [d for d in y if re.match('\d+', d)]  # procura na lista os que sao numeros, para retirar os undefined
     # MouseY= np.array(y).astype(int)
@@ -859,7 +919,7 @@ def createDictionary(df):
 
 
     lista_incrementing=longest_consecutive_increasing(lista_index) #lista de duplicates seguidos TA MAL
-    # print(find_subsequences((lista_index)))
+
     subsequence_list=find_subsequences(lista_index)
 
     for i in subsequence_list:
@@ -916,9 +976,12 @@ def createDictionary(df):
 
 
 
+
     # print(numberStrokes)
     # print(cutTime)
     # print(cutIndex)
+    # print(len(cutIndex))
+    # print(len(MouseTime))
     # print(len(MouseTime))
     # print(len(pauseVector))
 
@@ -929,27 +992,30 @@ def createDictionary(df):
     dM = pd.DataFrame.from_dict(MouseDict)
     time_var, space_var = interpolate_data(dM, t_abandon=20)
 
-    print(len(MouseTime))
-    print(len(time_var['ttv']))
+    # print(len(MouseTime))
+    # print(len(time_var['ttv']))
     # print(len(space_var['w']))
 
-    print(len(space_var['straightness']))
-    print(len(space_var['l_strokes']))
-    print((space_var['straightness'].tolist()).index(max(space_var['straightness'])))
-    print(np.cumsum(space_var['l_strokes'][0:12]))
-    a=np.cumsum(space_var['l_strokes'][0:12])
-    print(a[-1])
+
+    # print(len(space_var['straightness']))
+    # print(len(space_var['l_strokes']))
+    print(space_var['straightness'])
+    # print(space_var['l_strokes'])
+    # print((space_var['straightness'].tolist()).index(max(space_var['straightness'])))
+    # print(np.cumsum(space_var['l_strokes'][0:12]))
+    # a=np.cumsum(space_var['l_strokes'][0:12])
+    # print(a[-1])
     # print(space_var['ss'].index(a[-1]))
-    print(len(MouseDict['x']))
-    print(len(space_var['s']))
-    print(len(space_var['ss']))
+    # print(len(MouseDict['x']))
+    # print(len(space_var['s']))
+    # print(len(space_var['ss']))
     # print(len(space_var['xs']))
     # print(len(space_var['angles']))
     # print(len(space_var['curvatures']))
     # print(len(time_var['tt']))
     # print(len(time_var['ttv']))
-    print(space_var['ss'])
-    print(space_var['s'])
+    # print(space_var['ss'])
+    # print(space_var['s'])
     cleanedList = [x for x in space_var['straightness'] if str(x) != 'nan']
 
     # print(len(print(space_var['straightness'])))
@@ -1079,13 +1145,15 @@ def updateDropdownSearch(selected_options):
          a='Acceleration in time',
          xt='X position in time',
          yt='Y position in time',
-        pauses='Pauses'
+        pauses='Pauses',
          )
     spaceVar_Dict=dict(
         xs='X interpolated in space',
         ys='Y interpolated in space',
         angles='Angles',
-        curvatures='Curvature'
+        curvatures='Curvature',
+        straight='Straightness',
+        lenStrokes='Length of Strokes'
     )
 
     current_options=[]
@@ -1242,6 +1310,7 @@ def showtext2(selected_option):
 )
 def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
     global lastclick2
+    global matches_final
     matches=json.loads(matches)
     timevars_initial=json.loads(timevars_initial)
     # print(timevars_initial)
@@ -1265,7 +1334,7 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
             counter_subplot = 1
             fig = tools.make_subplots(rows=len(index_tv), cols=1)
             for j in index_tv:
-                print(j)
+
 
                 matchInitial = np.array(matches['matchInitial'])
                 matchFinal = np.array(matches['matchFinal'])
@@ -1279,7 +1348,7 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
                 matches_final=[]
                 for i in range(len(matchFinal[j])): #cria uma lista com os indexes de todas as matches
                     matches_final.extend(range(matchInitial[j][i], matchFinal[j][i])) #nao considera a matchFinal como match, seria preciso por +1 aqui
-                print(matches_final)
+
                 if (len(matchInitial[j])>0 and len(matchFinal[j])>0 ):
 
 
@@ -1919,7 +1988,6 @@ def interpolate_graf(value, json_data, timevar, logic, image):
                 hovermode='closest',
             )
             if image is not None: #N funciona qd tento fazer append de apenas a img ao layout
-                print(image)
                 layout=go.Layout(
                     title='Positional Map',
                     xaxis=dict(
@@ -1945,10 +2013,10 @@ def interpolate_graf(value, json_data, timevar, logic, image):
                             source=image,
                             xref="x",
                             yref="y",
-                            x=0,
-                            y=4,
-                            sizex=5,
-                            sizey=10,
+                            x=-2,
+                            y=7,
+                            sizex=10,
+                            sizey=15,
                             sizing="stretch",
                             opacity=0.5,
                             layer="below"
@@ -2107,19 +2175,19 @@ def interpolate_graf(value, json_data, timevar, logic, image):
                 # line={'width': 2, 'color': 'black'},
                 name="Clicks"
             ))
-            if image is not None:
-                layout.append(go.Layout(
-                    images=[dict(
-                        source=image,
-                        xref="x",
-                        yref="y",
-                        x=0,
-                        y=3,
-                        sizex=2,
-                        sizey=2,
-                        sizing="stretch",
-                        opacity=0.5,
-                        layer="below")]))
+            # if image is not None:
+            #     layout.append(go.Layout(
+            #         images=[dict(
+            #             source=image,
+            #             xref="x",
+            #             yref="y",
+            #             x=0,
+            #             y=3,
+            #             sizex=2,
+            #             sizey=2,
+            #             sizing="stretch",
+            #             opacity=0.5,
+            #             layer="below")]))
 
 
 
@@ -2132,7 +2200,8 @@ def interpolate_graf(value, json_data, timevar, logic, image):
         # for i in range(len(matchInitial)): #No idea what the purpose of this is
         #     for a in range(matchInitial[i], matchFinal[i]+1): #+1 porque o range faz ate o valor-1
         #         lista_matches.append(a)
-
+        print('mat ')
+        print(matches)
         nova_lista=[[],[],[]]
         flat_list= [[], [], []]
 
@@ -2164,7 +2233,8 @@ def interpolate_graf(value, json_data, timevar, logic, image):
                         nova_lista[j].append(np.where((time_array >= time_var['tt'][matchInitial[j][i]]) & (time_array <= time_var['tt'][matchFinal[j][i]-1])))
                     else:
                         nova_lista[j].append(np.where( (time_array>= time_var['tt'][matchInitial[j][i]]) & (time_array<= time_var['tt'][matchFinal[j][i]]) )) #pus -1 porque estava a sair fora do vector
-
+            print('noval')
+            print(nova_lista)
             if (len(nova_lista[j])!=0):
                 flat_list[j]=np.concatenate(nova_lista[j], axis=1)[0]
 
