@@ -286,7 +286,7 @@ def UpdateTimeVarGraph(traces, selected_option,clicks):
         #     ))
     elif (str(selected_option) == 'pauses'):
         traces.append(go.Scatter(
-            x=MouseDict['t'][:-1],
+            x=MouseDict['t'][1:],
             y=pauseVector,
             text=selected_option,
             opacity=0.7,
@@ -312,8 +312,10 @@ def UpdateTimeVarGraph(traces, selected_option,clicks):
         #     ))
     elif (str(selected_option)=='straight'):
 
+
         size_time=len(MouseDict['t'])
         straightness=np.zeros(size_time)
+
         for i in range(len(cutIndex)):
             if i ==0:
                 straightness[0:cutIndex[i]]=space_var['straightness'][0]
@@ -323,6 +325,7 @@ def UpdateTimeVarGraph(traces, selected_option,clicks):
 
             else:
                 straightness[cutIndex[i]:cutIndex[i+1]] = space_var['straightness'][i]
+
 
         traces.append(go.Scatter(
             x=MouseDict['t'],
@@ -361,6 +364,34 @@ def UpdateTimeVarGraph(traces, selected_option,clicks):
             },
             # line={'width': 2},
             name=str(selected_option)))
+    elif (str(selected_option) == 'pausescumsum'):
+        pauseVector = np.cumsum(pauseVector)
+        traces.append(go.Scatter(
+            x=MouseDict['t'][:-1],
+            y=pauseVector,
+            text=selected_option,
+            opacity=0.7,
+            marker={
+                'size': 5,
+                'line': {'width': 0.5, 'color': 'white'}
+            },
+            # line={'width': 2},
+            name=str(selected_option)
+        ))
+    elif (str(selected_option) == 'time'):
+        traces.append(go.Scatter(
+            x=MouseDict['t'],
+            y=MouseDict['t'],
+            text=selected_option,
+            opacity=0.7,
+            marker={
+                'size': 5,
+                'line': {'width': 0.5, 'color': 'white'}
+            },
+            # line={'width': 2},
+            name=str(selected_option)
+        ))
+
 
     return traces
 
@@ -380,7 +411,9 @@ def createLayoutTimevar(value, clicks, traces):
         angles='Angles',
         pauses='Time of pauses',
         straight= 'Straightness',
-        lenStrokes='Length of Strokes'
+        lenStrokes='Length of Strokes',
+        pausescumsum='Cumulative Sum of Pauses',
+        time='Time passed'
          )
     shapes = []
     if clicks==1:
@@ -795,9 +828,10 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                 {'label' : 'Angles', 'value': 'angles'},
                 {'label' : 'Curvatures', 'value': 'curvatures'},
                 {'label' : 'Pauses', 'value': 'pauses'},
+                {'label' : 'Cumulative Sum of Pauses', 'value': 'pausescumsum'},
                 {'label' : 'Straightness', 'value': 'straight'},
-                {'label' : 'Length of Strokes', 'value': 'lenStrokes'}
-
+                {'label' : 'Length of Strokes', 'value': 'lenStrokes'},
+                {'label' : 'Time Passed', 'value': 'time'},
             ],
             multi=True,
             placeholder="",
@@ -964,7 +998,7 @@ def createDictionary(df):
     cutTime=[]
 
     pauseVector = []
-    for i in range(len(MouseTime)-1):
+    for i in range(len(MouseTime)-1): #TODO: implement way for the user to control time that defines new stroke
         if MouseTime[i+1]-MouseTime[i]>1: #pauses>1 segundo => nova stroke
             numberStrokes=numberStrokes+1
             cutTime.append(MouseTime[i]) #append do ultimo ponto antes da pause
@@ -974,8 +1008,42 @@ def createDictionary(df):
     for i in range(len(cutTime)): #index das pauses
         cutIndex.append(np.argmax(MouseTime>cutTime[i]))
 
+    lel=[]
+    # for i in range(len(pauseVector)):
+    #     if i==0:
+    #         lel.append(np.where(MouseTime<= pauseVector[i]))
+    #     elif i==len(pauseVector)-1:
+    #         pass
+    #     #     lel.append(np.where(MouseTime))
+    #     else:
+    #         lel.append(np.where(MouseTime<= pauseVector[i+1]-pauseVector[i]))
+    # print('lel')
+    # print(lel)
+
+    pauseVectorIndex=[]
+    pauseVectorcumSum=np.cumsum(pauseVector)
+    print(pauseVectorcumSum)
+    print(MouseTime)
+    for i in range(len(pauseVectorcumSum)): #faz a procura dos indexes no vector MouseTime de cada pause, o comprimento de cada pause
+        pauseVectorIndex.append(np.where(pauseVectorcumSum[i]>=MouseTime))
 
 
+    # for i in range(len(pauseVectorIndex)):
+    #     pauseVector_final=np.zeros(len(pauseVectorIndex[i]))
+    #     if i == 0:
+    #         max_index=max(pauseVectorIndex[0][i])
+    #         pauseVector_final[0:max_index]=pauseVector[i]
+    #     elif i==len(pauseVectorIndex)-1:
+    #         max_index = max(pauseVectorIndex[0][i])
+    #         pauseVector_final[max_index:-1]=pauseVector[i]
+    #     else:
+    #         print(i)
+    #         max_index = max(pauseVectorIndex[0][i])
+    #         max_index1 = max(pauseVectorIndex[0][i+1])
+    #         pauseVector_final[max_index:max_index1] = pauseVector[i]
+    #
+    # print(pauseVector_final)
+    # print(pauseVector_final)
 
     # print(numberStrokes)
     # print(cutTime)
@@ -999,7 +1067,7 @@ def createDictionary(df):
 
     # print(len(space_var['straightness']))
     # print(len(space_var['l_strokes']))
-    print(space_var['straightness'])
+    # print(space_var['straightness'])
     # print(space_var['l_strokes'])
     # print((space_var['straightness'].tolist()).index(max(space_var['straightness'])))
     # print(np.cumsum(space_var['l_strokes'][0:12]))
@@ -1145,15 +1213,18 @@ def updateDropdownSearch(selected_options):
          a='Acceleration in time',
          xt='X position in time',
          yt='Y position in time',
-        pauses='Pauses',
+         pauses='Pauses',
+         straight='Straightness',
+         lenStrokes='Length of Strokes',
+        pausescumsum='Cumulative Sum of Pauses',
+        time='Time Passed'
          )
     spaceVar_Dict=dict(
         xs='X interpolated in space',
         ys='Y interpolated in space',
         angles='Angles',
         curvatures='Curvature',
-        straight='Straightness',
-        lenStrokes='Length of Strokes'
+
     )
 
     current_options=[]
@@ -1207,7 +1278,6 @@ def updateHiddenDiv(regex0, regex1, regex2,  string, n_clicks):
     matches={"matchInitial":[], "matchFinal":[]}
     regex=[]
     regex.extend((regex0, regex1, regex2))
-
 
     regex=list(filter(None, regex)) #para so iterar sobre as regex nao vazias
 
@@ -1312,6 +1382,7 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
     global lastclick2
     global matches_final
     matches=json.loads(matches)
+
     timevars_initial=json.loads(timevars_initial)
     # print(timevars_initial)
     # print(timevars_final.split())
@@ -1348,7 +1419,7 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
                 matches_final=[]
                 for i in range(len(matchFinal[j])): #cria uma lista com os indexes de todas as matches
                     matches_final.extend(range(matchInitial[j][i], matchFinal[j][i])) #nao considera a matchFinal como match, seria preciso por +1 aqui
-
+                print(matches_final)
                 if (len(matchInitial[j])>0 and len(matchFinal[j])>0 ):
 
 
@@ -1546,7 +1617,7 @@ def SCParser(parse, selector, data):
                 finalString[j].append(AmpC(data['data']['data'][j]['y'], float(parse[j][i + 1])))
             elif (parse[j][i] == '↥A'):
                 # function Amp
-                finalString[j].append(absAmp(data['data']['data'][j]['y'], float(parse[j][i + 1])))
+                finalString[j].append(absAmp(data['data']['data'][j]['y'], float(parse[j][i + 1]), float(parse[j][i + 2])))
 
             elif (parse[j][i] == '1D'):
                 # Function 1st Derivative
@@ -2200,8 +2271,7 @@ def interpolate_graf(value, json_data, timevar, logic, image):
         # for i in range(len(matchInitial)): #No idea what the purpose of this is
         #     for a in range(matchInitial[i], matchFinal[i]+1): #+1 porque o range faz ate o valor-1
         #         lista_matches.append(a)
-        print('mat ')
-        print(matches)
+
         nova_lista=[[],[],[]]
         flat_list= [[], [], []]
 
@@ -2212,10 +2282,11 @@ def interpolate_graf(value, json_data, timevar, logic, image):
         time_array=np.array(MouseDict['t'])
         listA=["vt", "vx", "vy", "a", "jerk"]
         listB=["xt", "yt"]
+        listC=['straight', 'lenStrokes', 'pausescumsum', 'time']
 
         print(time_var['ttv'][matchInitial[0][0]])
         print(time_var['ttv'][matchFinal[0][0]])
-
+        print(timevar)
         for j in range(len(timevar)): #para iterar entre os varios sinais
 
 
@@ -2233,10 +2304,16 @@ def interpolate_graf(value, json_data, timevar, logic, image):
                         nova_lista[j].append(np.where((time_array >= time_var['tt'][matchInitial[j][i]]) & (time_array <= time_var['tt'][matchFinal[j][i]-1])))
                     else:
                         nova_lista[j].append(np.where( (time_array>= time_var['tt'][matchInitial[j][i]]) & (time_array<= time_var['tt'][matchFinal[j][i]]) )) #pus -1 porque estava a sair fora do vector
+
+            if(timevar[j] in listC):
+                for i in range(len(matchInitial[j])):
+                    flat_list[j].extend(range(matchInitial[j][i], matchFinal[j][i]))
+
             print('noval')
             print(nova_lista)
-            if (len(nova_lista[j])!=0):
+            if (len(nova_lista[j])!=0 ): #para fazer flat das matches, acho que se usar extend em vez de append isto fica desnecessario
                 flat_list[j]=np.concatenate(nova_lista[j], axis=1)[0]
+            print(flat_list)
 
         flat_list = np.array(flat_list)
         final_list = []
