@@ -513,7 +513,7 @@ Div_XY_checklist=dcc.Checklist(
         {'label': 'Heatmap', 'value': 'heat'},
         {'label': 'Interpolate', 'value': 'interpolate'},
         {'label': 'Clicks', 'value': 'clicks'},
-        # {'label': 'Test', 'value': 'test'}
+         {'label': 'Scroll', 'value': 'scroll'}
     ],
     values=['XY'],
     style={'display':'inline-block', 'width':'100%'})
@@ -886,6 +886,9 @@ def createDictionary(df):
     global MouseDict
     global clickIndex
     global pauseVector  # TODO fazer isto sem vars globais
+    global Scroll
+    global MouseXoriginal
+    global MouseYoriginal
 
     MouseX=[]
     MouseY = []
@@ -939,23 +942,85 @@ def createDictionary(df):
     MouseX = np.array(MouseX)
     MouseY = np.array(MouseY)
     MouseClicks=np.array(MouseClicks)
+    print(len(MouseClicks))
+    print(len(MouseTime))
 
 
+#Encontrar os scroll events e o seu tamanho
+    scrollIndex=[]
+    scrollTime_partial=[]
+    for i in range(len(MouseX)-1):
+        if(MouseX[i]==MouseX[i+1]): # and MouseY[i]!=MouseY[i+1]: tirei isto porque ha pontos repetidos pelo meio dos scroll events
+            scrollIndex.append(i)
+
+    subsequences_scroll=find_subsequences(scrollIndex)
+
+#Para acrescentar o ultimo ponto a cada subsequencia
+    for i in range(len(subsequences_scroll)):
+        for j in range(len(subsequences_scroll[i])):
+            if j==len(subsequences_scroll[i])-1:
+                subsequences_scroll[i].append(subsequences_scroll[i][j]+1)
+
+#calcula o tempo de cada scroll
+    scrollTime=[]
+    partialScroll=0
+
+    for i in range(len(subsequences_scroll)):
+        for j in range(len(subsequences_scroll[i])):
+            if subsequences_scroll[i][j]==subsequences_scroll[i][-1]:
+                scrollTime.append(MouseTime[subsequences_scroll[i][j]]-MouseTime[subsequences_scroll[i][0]])
+
+    print(subsequences_scroll)
+    print('yaya')
+    print(scrollTime)
+    scroll_flat = [item for sublist in subsequences_scroll for item in sublist]
+    print(scroll_flat)
+#Encontrar os clicks, e saber a sua duraçao
+    MouseClickDuration = []
+    ClickCounter = 0
+    for i in range(len(MouseClicks)-1):
+        if MouseClicks[i] ==1 and MouseClicks[i+1]==4:
+            MouseClickDuration.append(MouseTime[i+1]-MouseTime[i])
+        if MouseClicks[i]==1:
+            ClickCounter=ClickCounter+1
+    print(ClickCounter)
+    print(MouseClickDuration)
+    print(len(MouseClickDuration))
+
+#descobrir index de posiçoes duplicadas
     lista_index=[]
     for i in range(len(MouseX) - 1): #saber index de duplicates
         if (MouseX[i] == MouseX[i + 1]) and (MouseY[i] == MouseY[i + 1]):
            lista_index.append(i+1)
 
+#eliminar as posiçoes com duplicates
+    MouseXoriginal=MouseX
+    MouseYoriginal = MouseY
     MouseX = np.delete(MouseX, lista_index) #remove duplicates
     MouseY = np.delete(MouseY, lista_index)
     MouseTime = np.delete(MouseTime, lista_index)
+    print(scroll_flat)
+
+    # for i in lista_index:
+    #     if i in scroll_flat:
+    #         scroll_flat.remove(i)
+    # print(scroll_flat)
+    Scroll=scroll_flat
+    # Scroll=np.delete(scroll_flat, lista_index)
+    print(lista_index)
+
+    print('a')
+    print(len(MouseX))
+    # print(scroll_flat)
 
 
 
     lista_incrementing=longest_consecutive_increasing(lista_index) #lista de duplicates seguidos TA MAL
 
+#encontra as subsequencias na lista de duplicados
     subsequence_list=find_subsequences(lista_index)
 
+#ha clicks no meio de posiçoes duplicadas, por isso é preciso ter em conta para nao os eliminar
     for i in subsequence_list:
         if len(i)>1: #ve as subsequences maiores que 1
             for j in range(len(i)):
@@ -979,11 +1044,13 @@ def createDictionary(df):
 
     MouseClicks=np.delete(MouseClicks, lista_index)
 
-    # print(MouseClicks)
+
+#saber o index dos clicks
     clickIndex=[]
     for i in range(len(MouseClicks)):
         if MouseClicks[i]==1:
             clickIndex.append(i)
+    print(len(clickIndex))
     # print(clickIndex)
     # print('x new')
     # print(len(MouseX))
@@ -997,6 +1064,7 @@ def createDictionary(df):
     numberStrokes=0
     cutTime=[]
 
+#calcular o numero de strokes e as pausas entre cada um
     pauseVector = []
     for i in range(len(MouseTime)-1): #TODO: implement way for the user to control time that defines new stroke
         if MouseTime[i+1]-MouseTime[i]>1: #pauses>1 segundo => nova stroke
@@ -1995,6 +2063,9 @@ def interpolate_graf(value, json_data, timevar, logic, image):
     global MouseDict
     global space_var
     global clickIndex
+    global Scroll
+    global MouseXoriginal
+    global MouseYoriginal
     # if image!=None:
     #     print('banana')
     matches = json.loads(json_data)
@@ -2025,8 +2096,8 @@ def interpolate_graf(value, json_data, timevar, logic, image):
 
             ))
             traces.append(go.Scatter(
-                y=MouseDict['y'][667:693],
-                x=MouseDict['x'][667:693],
+                y=MouseDict['y'][427:435],
+                x=MouseDict['x'][427:435],
                 name='Position',
                 mode='markers',
                 opacity=0.7,
@@ -2259,7 +2330,21 @@ def interpolate_graf(value, json_data, timevar, logic, image):
             #             sizing="stretch",
             #             opacity=0.5,
             #             layer="below")]))
-
+        if (value[i] == 'scroll'):
+            traces.append(go.Scatter(
+                x=MouseXoriginal[Scroll],
+                y=MouseYoriginal[Scroll],
+                # text=selected_option[0],
+                mode='markers',
+                opacity=0.7,
+                marker={
+                    'symbol' : '.',
+                    'size': 10,
+                    'line': {'width': 1, 'color': 'black'}
+                },
+                # line={'width': 2, 'color': 'black'},
+                name="Clicks"
+            ))
 
 
 
