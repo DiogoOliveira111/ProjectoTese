@@ -25,6 +25,7 @@ from numpy import diff
 from plotly import tools
 import pylab as pl
 from itertools import groupby, count
+from fpdf import FPDF
 
 traces =[]
 preva1= 0
@@ -142,8 +143,10 @@ def UpdateTimeVarGraph(traces, selected_option,clicks):
     global space_var
     global pauseVector
     global MouseDict
+    global MouseDictOriginal
     global clickIndex
     global cutIndex
+    global clickVector
     # print(MouseTime)
     # straightness_replicated=[]
     # # for i in range(len(space_var['straightness'])):
@@ -391,7 +394,19 @@ def UpdateTimeVarGraph(traces, selected_option,clicks):
             # line={'width': 2},
             name=str(selected_option)
         ))
-
+    elif (str(selected_option) == 'clicks'):
+        traces.append(go.Scatter(
+            x=MouseDictOriginal['t'],
+            y=clickVector,
+            text=selected_option,
+            opacity=0.7,
+            marker={
+                'size': 5,
+                'line': {'width': 0.5, 'color': 'white'}
+            },
+            # line={'width': 2},
+            name=str(selected_option)
+        ))
 
     return traces
 
@@ -413,7 +428,8 @@ def createLayoutTimevar(value, clicks, traces):
         straight= 'Straightness',
         lenStrokes='Length of Strokes',
         pausescumsum='Cumulative Sum of Pauses',
-        time='Time passed'
+        time='Time passed',
+        clicks='Clicks'
          )
     shapes = []
     if clicks==1:
@@ -469,6 +485,30 @@ def createLayoutTimevar(value, clicks, traces):
             bargap = 0,
         )
     return layout
+
+#WRITE PDF FUNCTION
+
+class PDF(FPDF):
+    def header(self):
+        # Logo
+        self.image('libphyslogo.jpg', 10, 8, 33)
+        # Arial bold 15
+        self.set_font('Arial', 'B', 15)
+        # Move to the right
+        self.cell(80)
+        # Title
+        self.cell(30, 10, 'Title', 1, 0, 'C')
+        # Line break
+        self.ln(20)
+
+    # Page footer
+    def footer(self):
+        # Position at 1.5 cm from bottom
+        self.set_y(-15)
+        # Arial italic 8
+        self.set_font('Arial', 'I', 8)
+        # Page number
+        self.cell(0, 10, 'Page ' + str(self.page_no()) + '/{nb}', 0, 0, 'C')
 
 
 #------------------------------
@@ -800,7 +840,8 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                             searchable=False,
                         # style={'width': '100%'} # aparentemente nao da para mexer no estilo deste mambo
                         ),
-                html.Button('Search Regex', id='searchregex', style=styleB)
+                html.Button('Search Regex', id='searchregex', style=styleB),
+                html.Button('Save Search in PDF', id='savePDF', style={'display': 'none'})
                         ],
                          style={
                             'width': '25%',
@@ -832,6 +873,7 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                 {'label' : 'Straightness', 'value': 'straight'},
                 {'label' : 'Length of Strokes', 'value': 'lenStrokes'},
                 {'label' : 'Time Passed', 'value': 'time'},
+                {'label' : 'Clicks', 'value': 'clicks'}
             ],
             multi=True,
             placeholder="",
@@ -844,6 +886,7 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
     html.Div(id='hiddenDiv_timevar', style={'display':'none'}),
     html.Div(id='hiddenDiv_Dictionary', style={'display':'none'}),
     html.Div(id='hiddenDiv_FinalString', style={'display': 'none'}),
+    html.Div(id='hiddenDiv_PDF', style={'display': 'none'}),
     html.Div([
         html.Button('Show Space Vars', id='showSpaceVar'),
         dcc.Markdown(id ='text_spacevar')]
@@ -887,8 +930,8 @@ def createDictionary(df):
     global clickIndex
     global pauseVector  # TODO fazer isto sem vars globais
     global Scroll
-    global MouseXoriginal
-    global MouseYoriginal
+    global MouseDictOriginal
+    global clickVector
 
     MouseX=[]
     MouseY = []
@@ -977,15 +1020,22 @@ def createDictionary(df):
     print(scroll_flat)
 #Encontrar os clicks, e saber a sua duraçao
     MouseClickDuration = []
-    ClickCounter = 0
+    ClickCounter = -1 #last click is not considered, since it is necessary to leave the page
     for i in range(len(MouseClicks)-1):
-        if MouseClicks[i] ==1 and MouseClicks[i+1]==4:
+        if MouseClicks[i] ==1 and MouseClicks[i+1]==4: #tem o problema de haver 1 seguido de 0 e depois 4
             MouseClickDuration.append(MouseTime[i+1]-MouseTime[i])
         if MouseClicks[i]==1:
             ClickCounter=ClickCounter+1
     print(ClickCounter)
     print(MouseClickDuration)
     print(len(MouseClickDuration))
+
+#criar o vector de clicks para as timevar
+    clickVector=np.zeros(len(MouseTime))
+    for i in range(len((MouseClicks))):
+        if MouseClicks[i]==1 or MouseClicks[i]==4:
+            clickVector[i]=1
+    print('crl')
 
 #descobrir index de posiçoes duplicadas
     lista_index=[]
@@ -996,6 +1046,7 @@ def createDictionary(df):
 #eliminar as posiçoes com duplicates
     MouseXoriginal=MouseX
     MouseYoriginal = MouseY
+    MouseTimeoriginal=MouseTime
     MouseX = np.delete(MouseX, lista_index) #remove duplicates
     MouseY = np.delete(MouseY, lista_index)
     MouseTime = np.delete(MouseTime, lista_index)
@@ -1045,7 +1096,7 @@ def createDictionary(df):
     MouseClicks=np.delete(MouseClicks, lista_index)
 
 
-#saber o index dos clicks
+#saber o index dos clicks depois de removidos os duplicates
     clickIndex=[]
     for i in range(len(MouseClicks)):
         if MouseClicks[i]==1:
@@ -1122,7 +1173,7 @@ def createDictionary(df):
     # print(len(pauseVector))
 
 
-
+    MouseDictOriginal= dict(t=MouseTimeoriginal, x=MouseXoriginal, y=MouseYoriginal)
     MouseDict = dict(t=MouseTime, x=MouseX, y=MouseY)
 
     dM = pd.DataFrame.from_dict(MouseDict)
@@ -1267,6 +1318,19 @@ def display_S(value):
         return {'display':'none'}
 
 @app.callback(
+    dash.dependencies.Output('savePDF', 'style'),
+    [dash.dependencies.Input('hiddenDiv', 'children')]
+)
+def showSavebutton(matches):
+    matches = json.loads(matches)
+    print('puta')
+    print(matches)
+    if len(matches['matchInitial'] )!= 0 and len(matches['matchFinal'])!= 0:
+        return {'display': 'inline-block'}
+    else:
+        return {'display':'none'}
+
+@app.callback(
     dash.dependencies.Output('dropdown_Search', 'options'),
     [dash.dependencies.Input('hiddenDiv_timevar', 'children')],
     # [dash.dependencies.State('dropdown_Search', 'options')]
@@ -1285,7 +1349,8 @@ def updateDropdownSearch(selected_options):
          straight='Straightness',
          lenStrokes='Length of Strokes',
         pausescumsum='Cumulative Sum of Pauses',
-        time='Time Passed'
+        time='Time Passed',
+        clicks='Clicks'
          )
     spaceVar_Dict=dict(
         xs='X interpolated in space',
@@ -1450,6 +1515,7 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
     global lastclick2
     global matches_final
     matches=json.loads(matches)
+    print(matches)
 
     timevars_initial=json.loads(timevars_initial)
     # print(timevars_initial)
@@ -1487,6 +1553,7 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
                 matches_final=[]
                 for i in range(len(matchFinal[j])): #cria uma lista com os indexes de todas as matches
                     matches_final.extend(range(matchInitial[j][i], matchFinal[j][i])) #nao considera a matchFinal como match, seria preciso por +1 aqui
+                print('yaaaaa')
                 print(matches_final)
                 if (len(matchInitial[j])>0 and len(matchFinal[j])>0 ):
 
@@ -1588,6 +1655,8 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
                 counter_subplot = counter_subplot + 1
                 # fig['layout'].update(height=600, width=600)
 
+
+
             return fig
             # {
             #         'data': traces,
@@ -1672,6 +1741,9 @@ def updateHiddenDivFinalStr(finalString):
 
 def SCParser(parse, selector, data):
     finalString = [[],[],[]]
+    print(parse)
+    print(selector)
+    print(data)
     # finalString={'0':'',
     #              '1': '',
     #              '2':''}
@@ -1778,14 +1850,14 @@ def SymbolicConnotationStringParser(n_clicks, data, parse, parse1, parse2, time_
 
     if (n_clicks != None):
 
-        if(n_clicks>lastclick1): # para fazer com que o graf so se altere quando clicamos no botao e nao devido aos outros callbacks-grafico ou input box
+        # if(n_clicks>lastclick1): # para fazer com que o graf so se altere quando clicamos no botao e nao devido aos outros callbacks-grafico ou input box, BUG: ESTAVA A DEIXAR DE FUNCIONAR QUANDO CLICAVA NO "SCROLL" OU "CLICKS" PQ N ENTRAVA NO IF E FICAVA A STRING VAZIA
 
-            CutString = []
-            CutString.append(parse.split())
-            CutString.append(parse1.split())
-            CutString.append(parse2.split())
-            selector=len(time_Vars)
-            finalString=SCParser(CutString, selector, data)
+        CutString = []
+        CutString.append(parse.split())
+        CutString.append(parse1.split())
+        CutString.append(parse2.split())
+        selector=len(time_Vars)
+        finalString=SCParser(CutString, selector, data)
 
             # for i in range(len(CutString)-1):
             #     if(CutString[i] =='A'):
@@ -1807,6 +1879,7 @@ def SymbolicConnotationStringParser(n_clicks, data, parse, parse1, parse2, time_
         lastclick1 = n_clicks
     # print(finalString)
     # print(len(finalString))
+    print(finalString)
     return finalString
 
 
@@ -2064,8 +2137,8 @@ def interpolate_graf(value, json_data, timevar, logic, image):
     global space_var
     global clickIndex
     global Scroll
-    global MouseXoriginal
-    global MouseYoriginal
+    global MouseDictOriginal
+
     # if image!=None:
     #     print('banana')
     matches = json.loads(json_data)
@@ -2332,8 +2405,8 @@ def interpolate_graf(value, json_data, timevar, logic, image):
             #             layer="below")]))
         if (value[i] == 'scroll'):
             traces.append(go.Scatter(
-                x=MouseXoriginal[Scroll],
-                y=MouseYoriginal[Scroll],
+                x=MouseDictOriginal['x'][Scroll],
+                y=MouseDictOriginal['y'][Scroll],
                 # text=selected_option[0],
                 mode='markers',
                 opacity=0.7,
@@ -2343,7 +2416,7 @@ def interpolate_graf(value, json_data, timevar, logic, image):
                     'line': {'width': 1, 'color': 'black'}
                 },
                 # line={'width': 2, 'color': 'black'},
-                name="Clicks"
+                name="Scroll"
             ))
 
 
@@ -2367,7 +2440,7 @@ def interpolate_graf(value, json_data, timevar, logic, image):
         time_array=np.array(MouseDict['t'])
         listA=["vt", "vx", "vy", "a", "jerk"]
         listB=["xt", "yt"]
-        listC=['straight', 'lenStrokes', 'pausescumsum', 'time']
+        listC=['straight', 'lenStrokes', 'pausescumsum', 'time', 'clicks']
 
         print(time_var['ttv'][matchInitial[0][0]])
         print(time_var['ttv'][matchFinal[0][0]])
@@ -2426,8 +2499,14 @@ def interpolate_graf(value, json_data, timevar, logic, image):
         # nova_lista = [i * ratio for i in lista_matches]
         # nova_lista=np.array((nova_lista))
         # nova_lista=np.rint(nova_lista).astype(int)
-        Xpos = np.array(MouseDict['x'])
-        Ypos = np.array(MouseDict['y'])
+        print(timevar)
+        if 'clicks' not in timevar:
+            Xpos = np.array(MouseDict['x'])
+            Ypos = np.array(MouseDict['y'])
+            print('KEK')
+        else:
+            Xpos = np.array(MouseDictOriginal['x'])
+            Ypos = np.array(MouseDictOriginal['y'])
 
         if (logic=='AND'): #HA UM ALGORITMO MELHOR PARA ISTO FOR SURE- encontrar os duplicates nas nested lists
             duplicates_list=[]
@@ -2483,9 +2562,47 @@ def interpolate_graf(value, json_data, timevar, logic, image):
             'layout': layout
     }
 
+@app.callback(
+    dash.dependencies.Output('hiddenDiv_PDF', 'value'),
+    [dash.dependencies.Input('savePDF', 'n_clicks'),
+     dash.dependencies.Output('hiddenDiv_PDFvalues', 'children')]
+)
+def createPDF(clicks):
+    global clickValue
 
-@app.callback(dash.dependencies.Output('text_spacevar', 'children'),
-              [dash.dependencies.Input('showSpaceVar', 'n_clicks')])
+    if clickValue<clicks:
+        # Write PDF
+        pdf = PDF()
+        pdf.alias_nb_pages()
+        pdf.add_page()
+        pdf.set_font('Times', '', 12)
+        pdf.cell()
+        for i in range(1, 41):
+            pdf.cell(0, 10, 'Printing line number ' + str(i), 0, 1)
+        pdf.output('KEK.pdf', 'F')
+
+    clickValue=clicks
+
+    print(clicks)
+
+@app.callback(
+    dash.dependencies.Output('hiddenDiv_PDFvalues', 'children'),
+    [dash.dependencies.Input('hiddenDiv', 'children'),
+     dash.dependencies.Input('timevar_graph_PP', 'figure'),
+    dash.dependencies.Input('hiddenDiv_timevar', 'children')]
+)
+def calculatePDFvalues(matches, data, timevar):
+    matches=json.loads(matches)
+    matchInitial= matches['matchInitial']
+    matchFinal=matches['matchFinal']
+    for j in range(len(timevar)):
+        for i in range(len(matchFinal[j])):  # cria uma lista com os indexes de todas as matches
+            matches_final.extend(range(matchInitial[j][i], matchFinal[j][i]))  # nao considera a matchFinal como match, seria preciso por +1 aqui
+
+
+@app.callback(
+    dash.dependencies.Output('text_spacevar', 'children'),
+    [dash.dependencies.Input('showSpaceVar', 'n_clicks')])
 def display_spacevar(n_clicks):
     if(n_clicks!= None):
         return '''OLA \n \
