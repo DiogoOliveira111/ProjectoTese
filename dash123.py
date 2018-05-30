@@ -887,6 +887,7 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
     html.Div(id='hiddenDiv_Dictionary', style={'display':'none'}),
     html.Div(id='hiddenDiv_FinalString', style={'display': 'none'}),
     html.Div(id='hiddenDiv_PDF', style={'display': 'none'}),
+    html.Div(id='hiddenDiv_PDFvalues', style={'display': 'none'}),
     html.Div([
         html.Button('Show Space Vars', id='showSpaceVar'),
         dcc.Markdown(id ='text_spacevar')]
@@ -985,8 +986,8 @@ def createDictionary(df):
     MouseX = np.array(MouseX)
     MouseY = np.array(MouseY)
     MouseClicks=np.array(MouseClicks)
-    print(len(MouseClicks))
-    print(len(MouseTime))
+    # print(len(MouseClicks))
+    # print(len(MouseTime))
 
 
 #Encontrar os scroll events e o seu tamanho
@@ -1013,11 +1014,11 @@ def createDictionary(df):
             if subsequences_scroll[i][j]==subsequences_scroll[i][-1]:
                 scrollTime.append(MouseTime[subsequences_scroll[i][j]]-MouseTime[subsequences_scroll[i][0]])
 
-    print(subsequences_scroll)
-    print('yaya')
-    print(scrollTime)
+    # print(subsequences_scroll)
+    # print('yaya')
+    # print(scrollTime)
     scroll_flat = [item for sublist in subsequences_scroll for item in sublist]
-    print(scroll_flat)
+    # print(scroll_flat)
 #Encontrar os clicks, e saber a sua duraçao
     MouseClickDuration = []
     ClickCounter = -1 #last click is not considered, since it is necessary to leave the page
@@ -1026,16 +1027,16 @@ def createDictionary(df):
             MouseClickDuration.append(MouseTime[i+1]-MouseTime[i])
         if MouseClicks[i]==1:
             ClickCounter=ClickCounter+1
-    print(ClickCounter)
-    print(MouseClickDuration)
-    print(len(MouseClickDuration))
+    # print(ClickCounter)
+    # print(MouseClickDuration)
+    # print(len(MouseClickDuration))
 
 #criar o vector de clicks para as timevar
     clickVector=np.zeros(len(MouseTime))
     for i in range(len((MouseClicks))):
         if MouseClicks[i]==1 or MouseClicks[i]==4:
             clickVector[i]=1
-    print('crl')
+
 
 #descobrir index de posiçoes duplicadas
     lista_index=[]
@@ -1050,19 +1051,15 @@ def createDictionary(df):
     MouseX = np.delete(MouseX, lista_index) #remove duplicates
     MouseY = np.delete(MouseY, lista_index)
     MouseTime = np.delete(MouseTime, lista_index)
-    print(scroll_flat)
+    # print(scroll_flat)
 
     # for i in lista_index:
     #     if i in scroll_flat:
     #         scroll_flat.remove(i)
-    # print(scroll_flat)
+
     Scroll=scroll_flat
     # Scroll=np.delete(scroll_flat, lista_index)
-    print(lista_index)
 
-    print('a')
-    print(len(MouseX))
-    # print(scroll_flat)
 
 
 
@@ -1101,7 +1098,7 @@ def createDictionary(df):
     for i in range(len(MouseClicks)):
         if MouseClicks[i]==1:
             clickIndex.append(i)
-    print(len(clickIndex))
+    # print(len(clickIndex))
     # print(clickIndex)
     # print('x new')
     # print(len(MouseX))
@@ -1141,8 +1138,8 @@ def createDictionary(df):
 
     pauseVectorIndex=[]
     pauseVectorcumSum=np.cumsum(pauseVector)
-    print(pauseVectorcumSum)
-    print(MouseTime)
+    # print(pauseVectorcumSum)
+    # print(MouseTime)
     for i in range(len(pauseVectorcumSum)): #faz a procura dos indexes no vector MouseTime de cada pause, o comprimento de cada pause
         pauseVectorIndex.append(np.where(pauseVectorcumSum[i]>=MouseTime))
 
@@ -1323,8 +1320,7 @@ def display_S(value):
 )
 def showSavebutton(matches):
     matches = json.loads(matches)
-    print('puta')
-    print(matches)
+
     if len(matches['matchInitial'] )!= 0 and len(matches['matchFinal'])!= 0:
         return {'display': 'inline-block'}
     else:
@@ -1418,9 +1414,9 @@ def updateHiddenDiv(regex0, regex1, regex2,  string, n_clicks):
         if (n_clicks > lastclick2 and len(string)>0):
             matchInitial = [[],[],[]]
             matchFinal = [[],[],[]]
-            print(regex)
-            print(len(regex))
-            print(string)
+            # print(regex)
+            # print(len(regex))
+            # print(string)
             for j in range(len(regex)): #itera nos varios sinais
                 regit = re.finditer(regex[j], string[j])
 
@@ -1436,7 +1432,7 @@ def updateHiddenDiv(regex0, regex1, regex2,  string, n_clicks):
             matches['matchInitial']=matchInitial.tolist()
             matches['matchFinal']= matchFinal.tolist()
             # print(len(string[0]))
-            print(matches)
+            # print(matches)
 
 
     return json.dumps(matches, sort_keys=True)
@@ -1515,7 +1511,7 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
     global lastclick2
     global matches_final
     matches=json.loads(matches)
-    print(matches)
+    # print(matches)
 
     timevars_initial=json.loads(timevars_initial)
     # print(timevars_initial)
@@ -1527,7 +1523,7 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
         index_tv=[]
         for i in range(len(timevars_final)): #para percorrer os varios sinais e saber os indices originais
             index_tv.append(timevars_initial.index(timevars_final[i]))
-        # print(index_tv)
+
 
         if(n_clicks>lastclick2 and len(matches)>0):
 
@@ -1553,8 +1549,8 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
                 matches_final=[]
                 for i in range(len(matchFinal[j])): #cria uma lista com os indexes de todas as matches
                     matches_final.extend(range(matchInitial[j][i], matchFinal[j][i])) #nao considera a matchFinal como match, seria preciso por +1 aqui
-                print('yaaaaa')
-                print(matches_final)
+
+                # print(matches_final)
                 if (len(matchInitial[j])>0 and len(matchFinal[j])>0 ):
 
 
@@ -1637,8 +1633,8 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
                     # yaxis='y1' + str(counter),
                     name='Signal'
                 ))
-                print('counter')
-                print(counter_subplot)
+                # print('counter')
+                # print(counter_subplot)
 
                 # print(traces[2])
                 if(counter_subplot==1):
@@ -1741,9 +1737,9 @@ def updateHiddenDivFinalStr(finalString):
 
 def SCParser(parse, selector, data):
     finalString = [[],[],[]]
-    print(parse)
-    print(selector)
-    print(data)
+    # print(parse)
+    # print(selector)
+    # print(data)
     # finalString={'0':'',
     #              '1': '',
     #              '2':''}
@@ -1879,7 +1875,7 @@ def SymbolicConnotationStringParser(n_clicks, data, parse, parse1, parse2, time_
         lastclick1 = n_clicks
     # print(finalString)
     # print(len(finalString))
-    print(finalString)
+    # print(finalString)
     return finalString
 
 
@@ -2442,9 +2438,9 @@ def interpolate_graf(value, json_data, timevar, logic, image):
         listB=["xt", "yt"]
         listC=['straight', 'lenStrokes', 'pausescumsum', 'time', 'clicks']
 
-        print(time_var['ttv'][matchInitial[0][0]])
-        print(time_var['ttv'][matchFinal[0][0]])
-        print(timevar)
+        # print(time_var['ttv'][matchInitial[0][0]])
+        # print(time_var['ttv'][matchFinal[0][0]])
+        # print(timevar)
         for j in range(len(timevar)): #para iterar entre os varios sinais
 
 
@@ -2467,11 +2463,11 @@ def interpolate_graf(value, json_data, timevar, logic, image):
                 for i in range(len(matchInitial[j])):
                     flat_list[j].extend(range(matchInitial[j][i], matchFinal[j][i]))
 
-            print('noval')
-            print(nova_lista)
+            # print('noval')
+            # print(nova_lista)
             if (len(nova_lista[j])!=0 ): #para fazer flat das matches, acho que se usar extend em vez de append isto fica desnecessario
                 flat_list[j]=np.concatenate(nova_lista[j], axis=1)[0]
-            print(flat_list)
+            # print(flat_list)
 
         flat_list = np.array(flat_list)
         final_list = []
@@ -2479,7 +2475,7 @@ def interpolate_graf(value, json_data, timevar, logic, image):
         for i in range(len(flat_list)): #para remover a parte vazia dos vectores pq o filter nao funciona
             if len(flat_list[i])>0:
                 final_list.append(flat_list[i])
-        print(final_list)
+        # print(final_list)
 
 
 
@@ -2499,11 +2495,11 @@ def interpolate_graf(value, json_data, timevar, logic, image):
         # nova_lista = [i * ratio for i in lista_matches]
         # nova_lista=np.array((nova_lista))
         # nova_lista=np.rint(nova_lista).astype(int)
-        print(timevar)
-        if 'clicks' not in timevar:
+        # print(timevar)
+        if 'clicks' not in timevar:  #o clicks tem de ser feito com o vector original,NOTE: ISTO PODE ESTAR MAL
             Xpos = np.array(MouseDict['x'])
             Ypos = np.array(MouseDict['y'])
-            print('KEK')
+            # print('KEK')
         else:
             Xpos = np.array(MouseDictOriginal['x'])
             Ypos = np.array(MouseDictOriginal['y'])
@@ -2519,6 +2515,8 @@ def interpolate_graf(value, json_data, timevar, logic, image):
                         duplicates_list.append(final_list[signal][i])
 
             final_list=np.array(duplicates_list)
+            # print('final')
+            # print(final_list)
             traces.append(go.Scatter(
                 x=Xpos[final_list],
                 y=Ypos[final_list],
@@ -2562,42 +2560,77 @@ def interpolate_graf(value, json_data, timevar, logic, image):
             'layout': layout
     }
 
-@app.callback(
-    dash.dependencies.Output('hiddenDiv_PDF', 'value'),
-    [dash.dependencies.Input('savePDF', 'n_clicks'),
-     dash.dependencies.Output('hiddenDiv_PDFvalues', 'children')]
-)
-def createPDF(clicks):
-    global clickValue
-
-    if clickValue<clicks:
-        # Write PDF
-        pdf = PDF()
-        pdf.alias_nb_pages()
-        pdf.add_page()
-        pdf.set_font('Times', '', 12)
-        pdf.cell()
-        for i in range(1, 41):
-            pdf.cell(0, 10, 'Printing line number ' + str(i), 0, 1)
-        pdf.output('KEK.pdf', 'F')
-
-    clickValue=clicks
-
-    print(clicks)
+# @app.callback(
+#     dash.dependencies.Output('hiddenDiv_PDF', 'value'),
+#     [
+#      dash.dependencies.Input('hiddenDiv_PDFvalues', 'children')]
+# )
+# def createPDF( info):
+#     global clickValue
+#     print('crl')
+#     clicks=0 #remove
+#     if clickValue<clicks:
+#         # Write PDF
+#         pdf = PDF()
+#         pdf.alias_nb_pages()
+#         pdf.add_page()
+#         pdf.set_font('Times', '', 12)
+#         pdf.cell()
+#         for i in range(1, 41):
+#             pdf.cell(0, 10, 'Printing line number ' + str(i), 0, 1)
+#         pdf.output('KEK.pdf', 'F')
+#
+#     clickValue=clicks
+#     retun
+#     # return json.dumps(clickValue)
+#     # print(clicks)
 
 @app.callback(
     dash.dependencies.Output('hiddenDiv_PDFvalues', 'children'),
     [dash.dependencies.Input('hiddenDiv', 'children'),
      dash.dependencies.Input('timevar_graph_PP', 'figure'),
-    dash.dependencies.Input('hiddenDiv_timevar', 'children')]
+    dash.dependencies.Input('timevar_graph', 'figure'),
+    dash.dependencies.Input('hiddenDiv_timevar', 'children'),
+    dash.dependencies.Input('savePDF', 'n_clicks')
+     ]
 )
-def calculatePDFvalues(matches, data, timevar):
+def calculatePDFvalues( matches, dataPP, data, timevar,click):
+    #
+    print('cmon')
     matches=json.loads(matches)
+    timevar=json.loads(timevar)
     matchInitial= matches['matchInitial']
     matchFinal=matches['matchFinal']
-    for j in range(len(timevar)):
-        for i in range(len(matchFinal[j])):  # cria uma lista com os indexes de todas as matches
-            matches_final.extend(range(matchInitial[j][i], matchFinal[j][i]))  # nao considera a matchFinal como match, seria preciso por +1 aqui
+    # print(data)
+
+    matches_final=[[],[],[]]
+    matchPercentage=[[],[],[]]
+    Signals=[[],[],[]]
+    SignalsPP=[[],[],[]]
+
+    if len(matchInitial)!=0 and len(matchFinal)!=0:
+        for j in range(len(timevar)):
+            matches_intermediate = [] #lista com os indexes de todas as matches, para apenas 1 sinal de cada vez
+            datax = np.array(data['data'][j]['x'])
+            datay= np.array(data['data'][j]['y'])
+            dataxPP = np.array(dataPP['data']['data'][j]['x'])
+            datayPP = np.array(dataPP['data']['data'][j]['y'])
+            for i in range(len(matchFinal[j])):  # cria uma lista com os indexes de todas as matches
+                matches_intermediate.extend(range(matchInitial[j][i], matchFinal[j][i]))  # nao considera a matchFinal como match, seria preciso por +1 aqui
+
+            matchPercentage.append((len(matches_intermediate)/len(dataxPP))*100)
+            SignalsPP.append(datayPP)
+            matches_final.append(matches_intermediate)
+            Signals.append(datay)
+    final_listPOS=calculatePos(timevar, matches)
+    # for i in range(len(matches_final)):
+    print('kkkkk')
+    matches_final= list(filter(None, matches_final))
+    matchPercentage = list(filter(None, matchPercentage))
+    # print(matches_final)
+    print(matchPercentage)
+
+    return json.dumps(click)
 
 
 @app.callback(
@@ -2660,8 +2693,65 @@ def display_spacevar(n_clicks):
         #
 
 
+def calculatePos(timevar, matches):
+    matchInitial = matches['matchInitial']
+    matchFinal = matches['matchFinal']
+    nova_lista = [[], [], []]
+    flat_list = [[], [], []]
+
+    # for i in range(len(lista_matches)):
+    #     valor_time=time_var['ttv'][lista_matches[i]]
+    #     nova_lista.append(MouseDict['t'].index(time_var['ttv'][lista_matches[i]]))
+
+    time_array = np.array(MouseDict['t'])
+    listA = ["vt", "vx", "vy", "a", "jerk"]
+    listB = ["xt", "yt"]
+    listC = ['straight', 'lenStrokes', 'pausescumsum', 'time', 'clicks']
+
+    # print(time_var['ttv'][matchInitial[0][0]])
+    # print(time_var['ttv'][matchFinal[0][0]])
+    # print(timevar)
+    for j in range(len(timevar)):  # para iterar entre os varios sinais
 
 
+        if timevar[j] in listA:
+
+            for i in range(len(matchInitial[j])):  # para iterar dentro do mm sinal entre as varias matches
+                if i == len(matchInitial[j]) - 1:
+                    nova_lista[j].append(np.where((time_array >= time_var['ttv'][matchInitial[j][i]]) & (
+                    time_array <= time_var['ttv'][matchFinal[j][i] - 1])))
+                else:
+                    nova_lista[j].append(np.where((time_array >= time_var['ttv'][matchInitial[j][i]]) & (
+                    time_array <= time_var['ttv'][matchFinal[j][i]])))
+
+        if (timevar[j] in listB):
+            for i in range(len(matchInitial[
+                                   j])):  # esta a sair fora do sinal qd a match é o ultimo ponto, acho que nao esta correcto assim
+                if i == len(matchInitial[j]) - 1:
+                    nova_lista[j].append(np.where((time_array >= time_var['tt'][matchInitial[j][i]]) & (
+                    time_array <= time_var['tt'][matchFinal[j][i] - 1])))
+                else:
+                    nova_lista[j].append(np.where((time_array >= time_var['tt'][matchInitial[j][i]]) & (
+                    time_array <= time_var['tt'][matchFinal[j][i]])))  # pus -1 porque estava a sair fora do vector
+
+        if (timevar[j] in listC):
+            for i in range(len(matchInitial[j])):
+                flat_list[j].extend(range(matchInitial[j][i], matchFinal[j][i]))
+
+        # print('noval')
+        # print(nova_lista)
+        if (len(nova_lista[
+                    j]) != 0):  # para fazer flat das matches, acho que se usar extend em vez de append isto fica desnecessario
+            flat_list[j] = np.concatenate(nova_lista[j], axis=1)[0]
+            # print(flat_list)
+
+    flat_list = np.array(flat_list)
+    final_list = []
+
+    for i in range(len(flat_list)):  # para remover a parte vazia dos vectores pq o filter nao funciona
+        if len(flat_list[i]) > 0:
+            final_list.append(flat_list[i])
+    return final_list
 if __name__ == '__main__':
     print(dcc.__version__)
     app.run_server()
