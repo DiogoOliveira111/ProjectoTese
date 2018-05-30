@@ -2602,11 +2602,13 @@ def calculatePDFvalues( matches, dataPP, data, timevar,click):
     matchInitial= matches['matchInitial']
     matchFinal=matches['matchFinal']
     # print(data)
+    print(matches)
 
     matches_final=[[],[],[]]
     matchPercentage=[[],[],[]]
     Signals=[[],[],[]]
     SignalsPP=[[],[],[]]
+    NrofMatches=[]
 
     if len(matchInitial)!=0 and len(matchFinal)!=0:
         for j in range(len(timevar)):
@@ -2615,6 +2617,7 @@ def calculatePDFvalues( matches, dataPP, data, timevar,click):
             datay= np.array(data['data'][j]['y'])
             dataxPP = np.array(dataPP['data']['data'][j]['x'])
             datayPP = np.array(dataPP['data']['data'][j]['y'])
+            NrofMatches.append(len(matchInitial[j]))
             for i in range(len(matchFinal[j])):  # cria uma lista com os indexes de todas as matches
                 matches_intermediate.extend(range(matchInitial[j][i], matchFinal[j][i]))  # nao considera a matchFinal como match, seria preciso por +1 aqui
 
@@ -2622,13 +2625,14 @@ def calculatePDFvalues( matches, dataPP, data, timevar,click):
             SignalsPP.append(datayPP)
             matches_final.append(matches_intermediate)
             Signals.append(datay)
-    final_listPOS=calculatePos(timevar, matches)
+    # final_listPOS=calculatePos(timevar, matches) #esta merda esta a dar erro, rever
     # for i in range(len(matches_final)):
     print('kkkkk')
     matches_final= list(filter(None, matches_final))
     matchPercentage = list(filter(None, matchPercentage))
     # print(matches_final)
-    print(matchPercentage)
+    # print(matchPercentage)
+
 
     return json.dumps(click)
 
