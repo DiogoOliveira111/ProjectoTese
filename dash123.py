@@ -2139,6 +2139,7 @@ def interpolate_graf(value, json_data, timevar, logic, image):
     #     print('banana')
     matches = json.loads(json_data)
 
+
     timevar=json.loads(timevar)
     # print(timevar)
     # print(matches)
@@ -2441,6 +2442,7 @@ def interpolate_graf(value, json_data, timevar, logic, image):
         # print(time_var['ttv'][matchInitial[0][0]])
         # print(time_var['ttv'][matchFinal[0][0]])
         # print(timevar)
+
         for j in range(len(timevar)): #para iterar entre os varios sinais
 
 
@@ -2453,6 +2455,7 @@ def interpolate_graf(value, json_data, timevar, logic, image):
                         nova_lista[j].append(np.where((time_array >= time_var['ttv'][matchInitial[j][i]]) & (time_array <= time_var['ttv'][matchFinal[j][i]])))
 
             if(timevar[j] in listB):
+                print(matchInitial[j])
                 for i in range (len(matchInitial[j])): #esta a sair fora do sinal qd a match é o ultimo ponto, acho que nao esta correcto assim
                     if i == len(matchInitial[j])-1:
                         nova_lista[j].append(np.where((time_array >= time_var['tt'][matchInitial[j][i]]) & (time_array <= time_var['tt'][matchFinal[j][i]-1])))
@@ -2475,8 +2478,8 @@ def interpolate_graf(value, json_data, timevar, logic, image):
         for i in range(len(flat_list)): #para remover a parte vazia dos vectores pq o filter nao funciona
             if len(flat_list[i])>0:
                 final_list.append(flat_list[i])
-        # print(final_list)
-
+        print('old')
+        print(final_list)
 
 
 
@@ -2560,30 +2563,76 @@ def interpolate_graf(value, json_data, timevar, logic, image):
             'layout': layout
     }
 
-# @app.callback(
-#     dash.dependencies.Output('hiddenDiv_PDF', 'value'),
-#     [
-#      dash.dependencies.Input('hiddenDiv_PDFvalues', 'children')]
-# )
-# def createPDF( info):
-#     global clickValue
-#     print('crl')
-#     clicks=0 #remove
-#     if clickValue<clicks:
-#         # Write PDF
-#         pdf = PDF()
-#         pdf.alias_nb_pages()
-#         pdf.add_page()
-#         pdf.set_font('Times', '', 12)
-#         pdf.cell()
-#         for i in range(1, 41):
-#             pdf.cell(0, 10, 'Printing line number ' + str(i), 0, 1)
-#         pdf.output('KEK.pdf', 'F')
-#
-#     clickValue=clicks
-#     retun
-#     # return json.dumps(clickValue)
-#     # print(clicks)
+@app.callback(
+    dash.dependencies.Output('hiddenDiv_PDF', 'value'),
+    [
+     dash.dependencies.Input('hiddenDiv_PDFvalues', 'children'),
+        dash.dependencies.Input('savePDF', 'n_clicks')]
+)
+def createPDF( info, clicks):
+    global clickValue
+    global MouseDict
+    global MouseDictOriginal
+
+    timeVar_Dict = dict(vt='Velocity in time',
+                        vy='Velocity in Y',
+                        vx='Velocity in X',
+                        jerk='Jerk',
+                        a='Acceleration in time',
+                        xt='X position in time',
+                        yt='Y position in time',
+                        pauses='Pauses',
+                        straight='Straightness',
+                        lenStrokes='Length of Strokes',
+                        pausescumsum='Cumulative Sum of Pauses',
+                        time='Time Passed',
+                        clicks='Clicks',
+                        xs='X interpolated in space',
+                        ys='Y interpolated in space',
+                        angles='Angles',
+                        curvatures='Curvature',
+
+    )
+    dictSave=json.loads(info)
+    print(dictSave['timevar'][0])
+    # print(dictSave)
+    print('ILLB EASD')
+    print(len(dictSave['SCtext']))
+    clickValue=0 #remove
+    print(clicks)
+    print(dictSave['final_listPOS'])
+    if clicks!=None:
+        # Write PDF
+        pdf = PDF()
+        pdf.alias_nb_pages()
+        pdf.add_page()
+        pdf.set_font('Times', '', 12)
+        for i in range(len(dictSave['SCtext'])): #para percorrer os varios sinais, podia ter escolhido outra var doesnt matter
+            pdf.cell(0, 10, 'Signal Analysed: ' + str(timeVar_Dict[dictSave['timevar'][i]]), 0, 1)
+            pdf.cell(0, 10, 'PreProcessing Method Used: ' + str(dictSave['PPtext'][i]), 0, 1)
+            pdf.cell(0, 10, 'Symbolic Connotation Method Used: ' + str(dictSave['SCtext'][i]), 0, 1)
+            pdf.cell(0, 10, 'Regex Searched: ' + str(dictSave['regex'][i]), 0, 1)
+            pdf.cell(0, 10, 'Unprocessed Signal: ' + str(dictSave['Signals'][i]), 0, 1)
+            pdf.cell(0, 10, 'Processed Signal: ' + str(dictSave['SignalsPP'][i]), 0, 1)
+            pdf.cell(0, 10, 'Number of Matches: ' + str(dictSave['NrofMatches'][i]), 0, 1)
+            pdf.cell(0, 10, 'List of Matches Position: ' + str(dictSave['matches_final'][i]), 0, 1)
+            pdf.cell(0, 10, '% of matches: ' + str(dictSave['matchPercentage'][i]), 0, 1)
+            if dictSave['timevar']=='clicks': #por causa da artimanha do MouseDictOriginal
+                    pdf.cell(0, 10, 'Position of Matches: ', 0, 1)
+                    pdf.cell(0, 10,'X: ' + str(MouseDictOriginal['x'][dictSave['final_listPOS'][i]]), 0, 1)
+                    pdf.cell(0, 10, 'Y: ' + str(MouseDictOriginal['y'][dictSave['final_listPOS'][i]]), 0, 1)
+            else:
+                    pdf.cell(0, 10, 'Position of Matches: ', 0, 1)
+                    pdf.cell(0, 10, 'X: ' + str(MouseDict['x'][dictSave['final_listPOS'][i]]), 0, 1)
+                    pdf.cell(0, 10, 'Y:  ' + str(MouseDict['y'][dictSave['final_listPOS'][i]]), 0, 1)
+            pdf.ln(h=20)
+
+        pdf.output('KEK.pdf', 'F')
+    #
+    clickValue=clicks
+    return clicks
+    # return json.dumps(clickValue)
+    # print(clicks)
 
 @app.callback(
     dash.dependencies.Output('hiddenDiv_PDFvalues', 'children'),
@@ -2592,23 +2641,37 @@ def interpolate_graf(value, json_data, timevar, logic, image):
     dash.dependencies.Input('timevar_graph', 'figure'),
     dash.dependencies.Input('hiddenDiv_timevar', 'children'),
     dash.dependencies.Input('savePDF', 'n_clicks')
-     ]
+     ],
+    [dash.dependencies.State('SCtext', 'value'),
+     dash.dependencies.State('SCtext1', 'value'),
+     dash.dependencies.State('SCtext2', 'value'),
+     dash.dependencies.State('PreProcessing', 'value'),
+      dash.dependencies.State('PreProcessing1', 'value'),
+      dash.dependencies.State('PreProcessing2', 'value'),
+     dash.dependencies.State('regex', 'value'),
+     dash.dependencies.State('regex1', 'value'),
+     dash.dependencies.State('regex2', 'value')
+      ]
 )
-def calculatePDFvalues( matches, dataPP, data, timevar,click):
-    #
-    print('cmon')
+def calculatePDFvalues( matches, dataPP, data, timevar,click, SCtext1, SCtext2, SCtext3, PPtext1, PPtext2, PPtext3, regex1, regex2, regex3):
+
     matches=json.loads(matches)
     timevar=json.loads(timevar)
     matchInitial= matches['matchInitial']
     matchFinal=matches['matchFinal']
-    # print(data)
-    print(matches)
 
-    matches_final=[[],[],[]]
-    matchPercentage=[[],[],[]]
-    Signals=[[],[],[]]
-    SignalsPP=[[],[],[]]
+    matches_final=[]
+    matchPercentage=[]
+    Signals=[]
+    SignalsPP=[]
     NrofMatches=[]
+    SCtext=[]
+    SCtext.extend((SCtext1, SCtext2, SCtext3))
+    PPtext = []
+    PPtext.extend((PPtext1, PPtext2, PPtext3))
+    regex=[]
+    regex.extend((regex1,regex2,regex3))
+
 
     if len(matchInitial)!=0 and len(matchFinal)!=0:
         for j in range(len(timevar)):
@@ -2625,17 +2688,64 @@ def calculatePDFvalues( matches, dataPP, data, timevar,click):
             SignalsPP.append(datayPP)
             matches_final.append(matches_intermediate)
             Signals.append(datay)
-    # final_listPOS=calculatePos(timevar, matches) #esta merda esta a dar erro, rever
+
+    # print('kkkkk')
+    final_listPOS=calculatePos(timevar, matches) #esta merda esta a dar erro, rever
+    # print(final_listPOS)
     # for i in range(len(matches_final)):
-    print('kkkkk')
+
     matches_final= list(filter(None, matches_final))
+    # print('% match')
+    # print(matchPercentage)
+    # print(Signals)
+    # print(SignalsPP)
+    # print(NrofMatches)
+    # print(matches_final)
     matchPercentage = list(filter(None, matchPercentage))
+    SCtext = list(filter(None, SCtext))
+    PPtext = list(filter(None, PPtext))
+    regex = list(filter(None, regex))
+
+    # for i in range(len(matchPercentage)):
+    #     Signals[i].tolist()
+    #     SignalsPP[i].tolist()
+    Signals=[l.tolist() for l in Signals]
+    SignalsPP = [l.tolist() for l in SignalsPP]
+    final_listPOS= [l.tolist() for l in final_listPOS]
+    # matches_final = [l.tolist() for l in matches_final]
+    Signals=list(Signals)
+    SignalsPP = list(SignalsPP)
+    NrofMatches=list(NrofMatches)
+    final_listPOS=list(final_listPOS)
+    matches_final=list(matches_final)
+
+    # print(matchPercentage)
     # print(matches_final)
     # print(matchPercentage)
+    # print(Signals)
+    dictSave={
+        "NrofMatches":NrofMatches,
+         "matchPercentage" : matchPercentage,
+        "Signals": Signals,
+        "SignalsPP" : SignalsPP,
+        "final_listPOS": final_listPOS,
+        "matches_final" :matches_final,
+        "timevar":timevar,
+        "PPtext": PPtext,
+        "SCtext" :SCtext,
+        "regex" : regex,
 
+    }
 
-    return json.dumps(click)
-
+    return json.dumps(dictSave, sort_keys=True)
+#
+# def set_default(obj):
+#     if isinstance(obj, set):
+#         return list(obj)
+#     elif isinstance(obj, np.array):
+#     print(obj)
+#     print(type(obj))
+#     raise TypeError
 
 @app.callback(
     dash.dependencies.Output('text_spacevar', 'children'),
@@ -2698,10 +2808,12 @@ def display_spacevar(n_clicks):
 
 
 def calculatePos(timevar, matches):
+    global MouseDict
     matchInitial = matches['matchInitial']
     matchFinal = matches['matchFinal']
     nova_lista = [[], [], []]
     flat_list = [[], [], []]
+    final_list=[]
 
     # for i in range(len(lista_matches)):
     #     valor_time=time_var['ttv'][lista_matches[i]]
@@ -2715,47 +2827,47 @@ def calculatePos(timevar, matches):
     # print(time_var['ttv'][matchInitial[0][0]])
     # print(time_var['ttv'][matchFinal[0][0]])
     # print(timevar)
-    for j in range(len(timevar)):  # para iterar entre os varios sinais
+    if np.size(matchInitial)>0:
+        for j in range(len(timevar)):  # para iterar entre os varios sinais
 
 
-        if timevar[j] in listA:
+            if timevar[j] in listA:
 
-            for i in range(len(matchInitial[j])):  # para iterar dentro do mm sinal entre as varias matches
-                if i == len(matchInitial[j]) - 1:
-                    nova_lista[j].append(np.where((time_array >= time_var['ttv'][matchInitial[j][i]]) & (
-                    time_array <= time_var['ttv'][matchFinal[j][i] - 1])))
-                else:
-                    nova_lista[j].append(np.where((time_array >= time_var['ttv'][matchInitial[j][i]]) & (
-                    time_array <= time_var['ttv'][matchFinal[j][i]])))
+                for i in range(len(matchInitial[j])):  # para iterar dentro do mm sinal entre as varias matches
+                    if i == len(matchInitial[j]) - 1:
+                        nova_lista[j].append(np.where((time_array >= time_var['ttv'][matchInitial[j][i]]) & (time_array <= time_var['ttv'][matchFinal[j][i] - 1])))
+                    else:
+                        nova_lista[j].append(np.where((time_array >= time_var['ttv'][matchInitial[j][i]]) & (time_array <= time_var['ttv'][matchFinal[j][i]])))
 
-        if (timevar[j] in listB):
-            for i in range(len(matchInitial[
-                                   j])):  # esta a sair fora do sinal qd a match é o ultimo ponto, acho que nao esta correcto assim
-                if i == len(matchInitial[j]) - 1:
-                    nova_lista[j].append(np.where((time_array >= time_var['tt'][matchInitial[j][i]]) & (
-                    time_array <= time_var['tt'][matchFinal[j][i] - 1])))
-                else:
-                    nova_lista[j].append(np.where((time_array >= time_var['tt'][matchInitial[j][i]]) & (
-                    time_array <= time_var['tt'][matchFinal[j][i]])))  # pus -1 porque estava a sair fora do vector
+            if (timevar[j] in listB):
 
-        if (timevar[j] in listC):
-            for i in range(len(matchInitial[j])):
-                flat_list[j].extend(range(matchInitial[j][i], matchFinal[j][i]))
+                for i in range(len(matchInitial[j])):  # esta a sair fora do sinal qd a match é o ultimo ponto, acho que nao esta correcto assim
+                    if i == len(matchInitial[j]) - 1:
+                        nova_lista[j].append(np.where((time_array >= time_var['tt'][matchInitial[j][i]]) & (time_array <= time_var['tt'][matchFinal[j][i] - 1])))
+                    else:
+                        nova_lista[j].append(np.where((time_array >= time_var['tt'][matchInitial[j][i]]) & (time_array <= time_var['tt'][matchFinal[j][i]])))  # pus -1 porque estava a sair fora do vector
 
-        # print('noval')
-        # print(nova_lista)
-        if (len(nova_lista[
-                    j]) != 0):  # para fazer flat das matches, acho que se usar extend em vez de append isto fica desnecessario
-            flat_list[j] = np.concatenate(nova_lista[j], axis=1)[0]
-            # print(flat_list)
+            if (timevar[j] in listC):
+                for i in range(len(matchInitial[j])):
+                    flat_list[j].extend(range(matchInitial[j][i], matchFinal[j][i]))
 
-    flat_list = np.array(flat_list)
-    final_list = []
+            # print('noval')
+            # print(nova_lista)
+            if (len(nova_lista[j]) != 0):  # para fazer flat das matches, acho que se usar extend em vez de append isto fica desnecessario
+                flat_list[j] = np.concatenate(nova_lista[j], axis=1)[0]
+                # print(flat_list)
 
-    for i in range(len(flat_list)):  # para remover a parte vazia dos vectores pq o filter nao funciona
-        if len(flat_list[i]) > 0:
-            final_list.append(flat_list[i])
+        flat_list = np.array(flat_list)
+        final_list = []
+
+        for i in range(len(flat_list)):  # para remover a parte vazia dos vectores pq o filter nao funciona
+            if len(flat_list[i]) > 0:
+                final_list.append(flat_list[i])
+
+
     return final_list
+
+
 if __name__ == '__main__':
     print(dcc.__version__)
     app.run_server()
