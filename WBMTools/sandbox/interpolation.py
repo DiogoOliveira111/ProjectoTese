@@ -209,7 +209,8 @@ def interpolate_data(track_variables, t_abandon, t_crop=pl.Inf, begin=0, end=-1)
 									angles= angle_value,
 									w= w,
 									curvatures= curvature,
-									var_curvatures=var_curvature
+									var_curvatures=var_curvature,
+									ts=ts
 								)
 
 	time_variables = dict(

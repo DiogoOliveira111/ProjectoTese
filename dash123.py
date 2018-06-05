@@ -147,6 +147,8 @@ def UpdateTimeVarGraph(traces, selected_option,clicks):
     global clickIndex
     global cutIndex
     global clickVector
+    global questionTime
+    global questionlist
     # print(MouseTime)
     # straightness_replicated=[]
     # # for i in range(len(space_var['straightness'])):
@@ -211,7 +213,7 @@ def UpdateTimeVarGraph(traces, selected_option,clicks):
         #     ))
     elif (str(selected_option) in ("xs, ys")):
         traces.append(go.Scatter(
-            x=space_var['ss'],
+            x=space_var['ts'],
             y=space_var[str(selected_option)],
             text=selected_option,
             opacity=0.7,
@@ -237,7 +239,7 @@ def UpdateTimeVarGraph(traces, selected_option,clicks):
         #     ))
     elif(str(selected_option) =='angles'):
         traces.append(go.Scatter(
-            x=space_var['ss'][:-1],
+            x=space_var['ts'][:-1],
             y=space_var[str(selected_option)],
             text=selected_option,
             opacity=0.7,
@@ -263,7 +265,7 @@ def UpdateTimeVarGraph(traces, selected_option,clicks):
         #     ))
     elif(str(selected_option)=='curvatures'):
         traces.append(go.Scatter(
-            x=space_var['ss'][:-2],
+            x=space_var['ts'][:-2],
             y=space_var[str(selected_option)],
             text=selected_option,
             opacity=0.7,
@@ -407,6 +409,19 @@ def UpdateTimeVarGraph(traces, selected_option,clicks):
             # line={'width': 2},
             name=str(selected_option)
         ))
+    elif (str(selected_option) == 'question'):
+        traces.append(go.Scatter(
+            x=questionTime,
+            y=questionlist,
+            text=selected_option,
+            opacity=0.7,
+            marker={
+                'size': 5,
+                'line': {'width': 0.5, 'color': 'white'}
+            },
+            # line={'width': 2},
+            name=str(selected_option)
+        ))
 
     return traces
 
@@ -429,7 +444,8 @@ def createLayoutTimevar(value, clicks, traces):
         lenStrokes='Length of Strokes',
         pausescumsum='Cumulative Sum of Pauses',
         time='Time passed',
-        clicks='Clicks'
+        clicks='Clicks',
+        question='Questions'
          )
     shapes = []
     if clicks==1:
@@ -497,7 +513,7 @@ class PDF(FPDF):
         # Move to the right
         self.cell(80)
         # Title
-        self.cell(30, 10, 'Title', 1, 0, 'C')
+        self.cell(30, 10, 'Report of Search Results', 1, 0, 'C')
         # Line break
         self.ln(20)
 
@@ -873,7 +889,8 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                 {'label' : 'Straightness', 'value': 'straight'},
                 {'label' : 'Length of Strokes', 'value': 'lenStrokes'},
                 {'label' : 'Time Passed', 'value': 'time'},
-                {'label' : 'Clicks', 'value': 'clicks'}
+                {'label' : 'Clicks', 'value': 'clicks'},
+                {'label' : 'Question', 'value': 'question'}
             ],
             multi=True,
             placeholder="",
@@ -920,7 +937,63 @@ def longest_consecutive_increasing(intvect):
 def find_subsequences(lista):
     return [list(g) for k, g in groupby(lista, key=lambda n, c=count(): n - next(c))]
 
+def obtainQuestion(df):
 
+    Q=[]
+    Q_int=[]
+    TimeQ=[]
+    Q_total_clicks=[]
+    Q_total_int_answered=[]
+    total_TQ_answered=[]
+    Q_answered=[]
+    TQ_answered=[]
+    Q_int_answered=[]
+
+    for index, i in df.iterrows():
+
+        if ('java' in i[2]):
+            q = re.search(r'Q\d{1,}', i[2]) #procura os valores numericos a seguir a Q
+            # print(q.group())
+            q = re.sub(r'0', '', q.group()[:-1]) + q.group()[-1:]
+            if (int(q[1:]) > 18):
+                continue
+            else:
+                # Q - string da questao (ex: Q1, Q2, Q3...)
+                Q.append(q)
+                # Q_int - questao em inteiro (ex: 1, 2, 3)
+                Q_int.append(int(q[1:]))
+                TimeQ.append(i[11])
+                # quando houve click na questao
+            if (i[1] == 1):
+                Q_total_clicks.append(q)
+                Q_total_int_answered.append(int(q[1:]))
+                total_TQ_answered.append(i[11])
+                # caso de questao mas hover na resposta (campo de respostas)
+        elif ('answer' in i[2]):
+            # procura questoes
+            qa = re.search(r'Q\d{1,}', i[2])
+            qa = re.sub(r'0', '', qa.group()[:-1]) + qa.group()[-1:]
+            a = re.search(r'Q\d{1,}-(A\d)', i[2])
+            # print(qa)
+            # print(a)
+            if (int(qa[1:]) > 18):
+                continue
+            else:
+                Q.append(qa)
+                Q_int.append(int(qa[1:]))
+                TimeQ.append(i[11])
+            if (i[1] == 1):
+                # questao que foi respondida
+                Q_answered.append(qa)
+                Q_int_answered.append(int(qa[1:]))
+                Q_total_clicks.append(qa)
+                Q_total_int_answered.append(int(qa[1:]))
+
+                TimeQ.append(i[11])
+                TQ_answered.append(i[11])
+                total_TQ_answered.append(i[11])
+
+    return Q_int, TimeQ
 #------------------------------------------------------
 #   Callback Functions
 #-----------------------------------------------------
@@ -933,6 +1006,9 @@ def createDictionary(df):
     global Scroll
     global MouseDictOriginal
     global clickVector
+    global questionTime
+    global questionlist
+
 
     MouseX=[]
     MouseY = []
@@ -972,6 +1048,7 @@ def createDictionary(df):
 
 
 
+
     # y = [d for d in y if re.match('\d+', d)]  # procura na lista os que sao numeros, para retirar os undefined
     # MouseY= np.array(y).astype(int)
 
@@ -981,8 +1058,14 @@ def createDictionary(df):
             MouseTime.append(0)
         else:
             MouseTime.append((df[11][i]/1000)-initial_time)
-    # MouseTime=MouseTime[::7]
 
+    questionlist, questionTime = obtainQuestion(df) #para converter os timestamps das questoes
+    for i in range(len(questionTime)):
+        questionTime[i]=((questionTime[i]/1000)-initial_time)
+
+    # MouseTime=MouseTime[::7]
+    # print(questionTime)
+    # print(MouseTime)
     MouseX = np.array(MouseX)
     MouseY = np.array(MouseY)
     MouseClicks=np.array(MouseClicks)
@@ -1178,11 +1261,13 @@ def createDictionary(df):
 
     # print(len(MouseTime))
     # print(len(time_var['ttv']))
-    # print(len(space_var['w']))
+    print('plsbasedgod')
+    print(len(space_var['w']))
+    print(len(space_var['ts']))
+    print(space_var['ts'])
 
-
-    # print(len(space_var['straightness']))
-    # print(len(space_var['l_strokes']))
+    print(len(space_var['straightness']))
+    print(len(space_var['l_strokes']))
     # print(space_var['straightness'])
     # print(space_var['l_strokes'])
     # print((space_var['straightness'].tolist()).index(max(space_var['straightness'])))
@@ -1191,11 +1276,13 @@ def createDictionary(df):
     # print(a[-1])
     # print(space_var['ss'].index(a[-1]))
     # print(len(MouseDict['x']))
-    # print(len(space_var['s']))
-    # print(len(space_var['ss']))
-    # print(len(space_var['xs']))
-    # print(len(space_var['angles']))
-    # print(len(space_var['curvatures']))
+    print(len(space_var['s']))
+    print(len(space_var['ss']))
+    print(len(space_var['xs']))
+    print(len(space_var['angles']))
+    print(len(space_var['curvatures']))
+    print(len(space_var['var_curvatures']))
+    print(len(space_var['w']))
     # print(len(time_var['tt']))
     # print(len(time_var['ttv']))
     # print(space_var['ss'])
@@ -1346,7 +1433,8 @@ def updateDropdownSearch(selected_options):
          lenStrokes='Length of Strokes',
         pausescumsum='Cumulative Sum of Pauses',
         time='Time Passed',
-        clicks='Clicks'
+        clicks='Clicks',
+        question='Questions'
          )
     spaceVar_Dict=dict(
         xs='X interpolated in space',
@@ -1434,7 +1522,7 @@ def updateHiddenDiv(regex0, regex1, regex2,  string, n_clicks):
             # print(len(string[0]))
             # print(matches)
 
-
+    print(matches)
     return json.dumps(matches, sort_keys=True)
 
 #Display hidden Content - PP, SC and regex
@@ -2134,6 +2222,7 @@ def interpolate_graf(value, json_data, timevar, logic, image):
     global clickIndex
     global Scroll
     global MouseDictOriginal
+    global questionTime
 
     # if image!=None:
     #     print('banana')
@@ -2438,6 +2527,7 @@ def interpolate_graf(value, json_data, timevar, logic, image):
         listA=["vt", "vx", "vy", "a", "jerk"]
         listB=["xt", "yt"]
         listC=['straight', 'lenStrokes', 'pausescumsum', 'time', 'clicks']
+        listD=['curvature', 'angles', 'w', 'var_curvatures']
 
         # print(time_var['ttv'][matchInitial[0][0]])
         # print(time_var['ttv'][matchFinal[0][0]])
@@ -2455,7 +2545,6 @@ def interpolate_graf(value, json_data, timevar, logic, image):
                         nova_lista[j].append(np.where((time_array >= time_var['ttv'][matchInitial[j][i]]) & (time_array <= time_var['ttv'][matchFinal[j][i]])))
 
             if(timevar[j] in listB):
-                print(matchInitial[j])
                 for i in range (len(matchInitial[j])): #esta a sair fora do sinal qd a match é o ultimo ponto, acho que nao esta correcto assim
                     if i == len(matchInitial[j])-1:
                         nova_lista[j].append(np.where((time_array >= time_var['tt'][matchInitial[j][i]]) & (time_array <= time_var['tt'][matchFinal[j][i]-1])))
@@ -2465,6 +2554,20 @@ def interpolate_graf(value, json_data, timevar, logic, image):
             if(timevar[j] in listC):
                 for i in range(len(matchInitial[j])):
                     flat_list[j].extend(range(matchInitial[j][i], matchFinal[j][i]))
+
+            if (timevar[j] in listD):
+                for i in range(len(matchInitial[j])):  # esta a sair fora do sinal qd a match é o ultimo ponto, acho que nao esta correcto assim
+                    if i == len(matchInitial[j]) - 1:
+                        nova_lista[j].append(np.where((time_array >= space_var['ts'][matchInitial[j][i]]) & (time_array <= space_var['ts'][matchFinal[j][i] - 1])))
+                    else:
+                        nova_lista[j].append(np.where((time_array >= space_var['ts'][matchInitial[j][i]]) & (time_array <= space_var['ts'][matchFinal[j][i]])))  # pus -1 porque estava a sair fora do vector
+
+            if(timevar[j] == 'question'): #esta series tem um x diferente, que nao o MouseDict['t']
+                for i in range (len(matchInitial[j])): #esta a sair fora do sinal qd a match é o ultimo ponto, acho que nao esta correcto assim
+                    if i == len(matchInitial[j])-1:
+                        nova_lista[j].append(np.where((time_array >= questionTime[matchInitial[j][i]]) & (time_array <= questionTime[matchFinal[j][i]-1])))
+                    else:
+                        nova_lista[j].append(np.where( (time_array>= questionTime[matchInitial[j][i]]) & (time_array<= questionTime[matchFinal[j][i]]) )) #pus -1 porque estava a sair fora do vector
 
             # print('noval')
             # print(nova_lista)
@@ -2502,8 +2605,8 @@ def interpolate_graf(value, json_data, timevar, logic, image):
         if 'clicks' not in timevar:  #o clicks tem de ser feito com o vector original,NOTE: ISTO PODE ESTAR MAL
             Xpos = np.array(MouseDict['x'])
             Ypos = np.array(MouseDict['y'])
-            # print('KEK')
         else:
+
             Xpos = np.array(MouseDictOriginal['x'])
             Ypos = np.array(MouseDictOriginal['y'])
 
@@ -2596,7 +2699,7 @@ def createPDF( info, clicks):
     dictSave=json.loads(info)
     print(dictSave['timevar'][0])
     # print(dictSave)
-    print('ILLB EASD')
+
     print(len(dictSave['SCtext']))
     clickValue=0 #remove
     print(clicks)
@@ -2627,7 +2730,7 @@ def createPDF( info, clicks):
                     pdf.cell(0, 10, 'Y:  ' + str(MouseDict['y'][dictSave['final_listPOS'][i]]), 0, 1)
             pdf.ln(h=20)
 
-        pdf.output('KEK.pdf', 'F')
+        pdf.output('MatchPDF.pdf', 'F')
     #
     clickValue=clicks
     return clicks
