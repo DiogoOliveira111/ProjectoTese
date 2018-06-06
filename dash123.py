@@ -276,6 +276,19 @@ def UpdateTimeVarGraph(traces, selected_option,clicks):
             line={'width': 2},
             name=str(selected_option)
         ))
+    elif (str(selected_option) == 'var_curvatures'):
+        traces.append(go.Scatter(
+            x=space_var['ts'][:-3],
+            y=space_var[str(selected_option)],
+            text=selected_option,
+            opacity=0.7,
+            # marker={
+            #     'size': 5,
+            #     'line': {'width': 0.5, 'color': 'white'}
+            # },
+            line={'width': 2},
+            name=str(selected_option)
+        ))
         # if (clicks == 1):
         #     traces.append(go.Scatter(
         #         x=MouseDict['t'][clickIndex],
@@ -289,6 +302,19 @@ def UpdateTimeVarGraph(traces, selected_option,clicks):
         #         # line={'width': 2},
         #         name=str(selected_option)
         #     ))
+    elif (str(selected_option) == 'w'):
+        traces.append(go.Scatter(
+            x=space_var['ts'][:-2],
+            y=space_var[str(selected_option)],
+            text=selected_option,
+            opacity=0.7,
+            # marker={
+            #     'size': 5,
+            #     'line': {'width': 0.5, 'color': 'white'}
+            # },
+            line={'width': 2},
+            name=str(selected_option)
+        ))
     elif (str(selected_option) == 'pauses'):
         traces.append(go.Scatter(
             x=MouseDict['t'][1:],
@@ -369,6 +395,7 @@ def UpdateTimeVarGraph(traces, selected_option,clicks):
             },
             # line={'width': 2},
             name=str(selected_option)))
+
     elif (str(selected_option) == 'pausescumsum'):
         pauseVector = np.cumsum(pauseVector)
         traces.append(go.Scatter(
@@ -409,6 +436,19 @@ def UpdateTimeVarGraph(traces, selected_option,clicks):
             # line={'width': 2},
             name=str(selected_option)
         ))
+    elif (str(selected_option) == 'ss'):
+        traces.append(go.Scatter(
+            x=space_var['ts'],
+            y=space_var[str(selected_option)],
+            text=selected_option,
+            opacity=0.7,
+            marker={
+                'size': 5,
+                'line': {'width': 0.5, 'color': 'white'}
+            },
+            # line={'width': 2},
+            name=str(selected_option)
+        ))
     elif (str(selected_option) == 'question'):
         traces.append(go.Scatter(
             x=questionTime,
@@ -438,6 +478,8 @@ def createLayoutTimevar(value, clicks, traces):
         xs='X interpolated in time',
         ys='Y interpolated in time',
         curvatures='Curvatures',
+        var_curvatures='Variation of Curvature',
+        w='Angular Velocity',
         angles='Angles',
         pauses='Time of pauses',
         straight= 'Straightness',
@@ -445,7 +487,8 @@ def createLayoutTimevar(value, clicks, traces):
         pausescumsum='Cumulative Sum of Pauses',
         time='Time passed',
         clicks='Clicks',
-        question='Questions'
+        question='Questions',
+        ss='Space Traveled'
          )
     shapes = []
     if clicks==1:
@@ -884,13 +927,16 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                 {'label' : 'Y interpolated in space', 'value': 'ys'},
                 {'label' : 'Angles', 'value': 'angles'},
                 {'label' : 'Curvatures', 'value': 'curvatures'},
+                {'label' : 'Variation of Curvatures', 'value': 'var_curvatures'},
+                {'label' : 'Angular Velocity', 'value': 'w'},
                 {'label' : 'Pauses', 'value': 'pauses'},
                 {'label' : 'Cumulative Sum of Pauses', 'value': 'pausescumsum'},
                 {'label' : 'Straightness', 'value': 'straight'},
                 {'label' : 'Length of Strokes', 'value': 'lenStrokes'},
                 {'label' : 'Time Passed', 'value': 'time'},
                 {'label' : 'Clicks', 'value': 'clicks'},
-                {'label' : 'Question', 'value': 'question'}
+                {'label' : 'Question', 'value': 'question'},
+                {'label' : 'Space Traveled', 'value': 'ss'}
             ],
             multi=True,
             placeholder="",
@@ -1441,7 +1487,9 @@ def updateDropdownSearch(selected_options):
         ys='Y interpolated in space',
         angles='Angles',
         curvatures='Curvature',
-
+        w='Angular Velocity',
+        var_curvatures='Variation of Curvature',
+        ss='Space Traveled'
     )
 
     current_options=[]
@@ -1521,7 +1569,7 @@ def updateHiddenDiv(regex0, regex1, regex2,  string, n_clicks):
             matches['matchFinal']= matchFinal.tolist()
             # print(len(string[0]))
             # print(matches)
-
+    print('hidden')
     print(matches)
     return json.dumps(matches, sort_keys=True)
 
@@ -1640,7 +1688,6 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
 
                 # print(matches_final)
                 if (len(matchInitial[j])>0 and len(matchFinal[j])>0 ):
-
 
                     traces_matches.append(go.Scatter(  # match initial append
                             x=datax[matches_final], #NOTA TENHO DE TER EM CONTA SE QUISER MOSTRAR UM SINAL NAO TRATADO
@@ -2254,19 +2301,19 @@ def interpolate_graf(value, json_data, timevar, logic, image):
 
 
             ))
-            traces.append(go.Scatter(
-                y=MouseDict['y'][427:435],
-                x=MouseDict['x'][427:435],
-                name='Position',
-                mode='markers',
-                opacity=0.7,
-                marker=dict(
-                    size=5,
-                    color='red',
-                    line=dict(
-                        width=1)
-                        )
-                ))
+            # traces.append(go.Scatter(
+            #     y=MouseDict['y'][427:435],
+            #     x=MouseDict['x'][427:435],
+            #     name='Position',
+            #     mode='markers',
+            #     opacity=0.7,
+            #     marker=dict(
+            #         size=5,
+            #         color='red',
+            #         line=dict(
+            #             width=1)
+            #             )
+            #     ))
             layout= go.Layout(
                 title='Positional Map',
                 xaxis=dict(
@@ -2509,8 +2556,8 @@ def interpolate_graf(value, json_data, timevar, logic, image):
 
 
     if(np.size(matches['matchInitial'])>0):
-
-        # print(matches)
+        print('aymatch')
+        print(matches)
         lista_matches=[]
         # for i in range(len(matchInitial)): #No idea what the purpose of this is
         #     for a in range(matchInitial[i], matchFinal[i]+1): #+1 porque o range faz ate o valor-1
@@ -2527,7 +2574,7 @@ def interpolate_graf(value, json_data, timevar, logic, image):
         listA=["vt", "vx", "vy", "a", "jerk"]
         listB=["xt", "yt"]
         listC=['straight', 'lenStrokes', 'pausescumsum', 'time', 'clicks']
-        listD=['curvature', 'angles', 'w', 'var_curvatures']
+        listD=['curvatures', 'angles', 'w', 'var_curvatures']
 
         # print(time_var['ttv'][matchInitial[0][0]])
         # print(time_var['ttv'][matchFinal[0][0]])
@@ -2556,6 +2603,7 @@ def interpolate_graf(value, json_data, timevar, logic, image):
                     flat_list[j].extend(range(matchInitial[j][i], matchFinal[j][i]))
 
             if (timevar[j] in listD):
+                print('we in')
                 for i in range(len(matchInitial[j])):  # esta a sair fora do sinal qd a match é o ultimo ponto, acho que nao esta correcto assim
                     if i == len(matchInitial[j]) - 1:
                         nova_lista[j].append(np.where((time_array >= space_var['ts'][matchInitial[j][i]]) & (time_array <= space_var['ts'][matchFinal[j][i] - 1])))
@@ -2569,11 +2617,11 @@ def interpolate_graf(value, json_data, timevar, logic, image):
                     else:
                         nova_lista[j].append(np.where( (time_array>= questionTime[matchInitial[j][i]]) & (time_array<= questionTime[matchFinal[j][i]]) )) #pus -1 porque estava a sair fora do vector
 
-            # print('noval')
-            # print(nova_lista)
+            print('noval')
+            print(nova_lista)
             if (len(nova_lista[j])!=0 ): #para fazer flat das matches, acho que se usar extend em vez de append isto fica desnecessario
                 flat_list[j]=np.concatenate(nova_lista[j], axis=1)[0]
-            # print(flat_list)
+            print(flat_list)
 
         flat_list = np.array(flat_list)
         final_list = []
@@ -2694,7 +2742,8 @@ def createPDF( info, clicks):
                         ys='Y interpolated in space',
                         angles='Angles',
                         curvatures='Curvature',
-
+                        w='Angular Velocity',
+                        var_curvatures= 'Variation of Curvature'
     )
     dictSave=json.loads(info)
     print(dictSave['timevar'][0])
@@ -2792,7 +2841,7 @@ def calculatePDFvalues( matches, dataPP, data, timevar,click, SCtext1, SCtext2, 
             matches_final.append(matches_intermediate)
             Signals.append(datay)
 
-    # print('kkkkk')
+
     final_listPOS=calculatePos(timevar, matches) #esta merda esta a dar erro, rever
     # print(final_listPOS)
     # for i in range(len(matches_final)):
@@ -2826,6 +2875,7 @@ def calculatePDFvalues( matches, dataPP, data, timevar,click, SCtext1, SCtext2, 
     # print(matches_final)
     # print(matchPercentage)
     # print(Signals)
+
     dictSave={
         "NrofMatches":NrofMatches,
          "matchPercentage" : matchPercentage,
@@ -2837,7 +2887,6 @@ def calculatePDFvalues( matches, dataPP, data, timevar,click, SCtext1, SCtext2, 
         "PPtext": PPtext,
         "SCtext" :SCtext,
         "regex" : regex,
-
     }
 
     return json.dumps(dictSave, sort_keys=True)
