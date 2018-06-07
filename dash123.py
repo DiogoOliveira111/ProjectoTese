@@ -2184,6 +2184,78 @@ def showPreProcess1(selected_option):
     else:
         return {'display':'none'}
 
+#para apagar as caixas qd se troca de timevar
+@app.callback(
+    dash.dependencies.Output('PreProcessing1', 'value'),
+    [dash.dependencies.Input('dropdown_timevar', 'value')],
+    [dash.dependencies.State('PreProcessing1', 'value')]
+)
+def cleanBoxPP1(selected_option, currentPP1):
+    selected_option = np.array(selected_option)
+    if selected_option.size<2:
+        return ""
+    else:
+        return currentPP1
+
+@app.callback(
+    dash.dependencies.Output('PreProcessing2', 'value'),
+    [dash.dependencies.Input('dropdown_timevar', 'value')],
+    [dash.dependencies.State('PreProcessing2', 'value')]
+)
+def cleanBoxPP2(selected_option, currentPP2):
+    selected_option = np.array(selected_option)
+    if selected_option.size < 3:
+        return ""
+    else:
+        return currentPP2
+
+@app.callback(
+    dash.dependencies.Output('SCtext1', 'value'),
+    [dash.dependencies.Input('dropdown_timevar', 'value')],
+    [dash.dependencies.State('SCtext1', 'value')]
+)
+def cleanBoxSC1(selected_option, currentSC1):
+    selected_option = np.array(selected_option)
+    if selected_option.size < 2:
+        return ""
+    else:
+        return currentSC1
+
+@app.callback(
+    dash.dependencies.Output('SCtext2', 'value'),
+    [dash.dependencies.Input('dropdown_timevar', 'value')],
+    [dash.dependencies.State('SCtext2', 'value')]
+)
+def cleanBoxSC2(selected_option, currentSC2):
+    selected_option = np.array(selected_option)
+    if selected_option.size < 3:
+        return ""
+    else:
+        return currentSC2
+
+@app.callback(
+    dash.dependencies.Output('regex1', 'value'),
+    [dash.dependencies.Input('dropdown_timevar', 'value')],
+    [dash.dependencies.State('regex1', 'value')]
+)
+def cleanBoxRegex1(selected_option, currentRegex1):
+    selected_option = np.array(selected_option)
+    if selected_option.size < 2:
+        return ""
+    else:
+        return currentRegex1
+
+@app.callback(
+    dash.dependencies.Output('regex2', 'value'),
+    [dash.dependencies.Input('dropdown_timevar', 'value')],
+    [dash.dependencies.State('regex2', 'value')]
+)
+def cleanBoxRegex2(selected_option, currentRegex2):
+    selected_option = np.array(selected_option)
+    if selected_option.size < 3:
+        return ""
+    else:
+        return currentRegex2
 
 # @app.callback(
 #     dash.dependencies.Output('PreProcessDiv', 'children'),
@@ -2746,13 +2818,13 @@ def createPDF( info, clicks):
                         var_curvatures= 'Variation of Curvature'
     )
     dictSave=json.loads(info)
-    print(dictSave['timevar'][0])
+    # print(dictSave['timevar'][0])
     # print(dictSave)
 
-    print(len(dictSave['SCtext']))
+    # print(len(dictSave['SCtext']))
     clickValue=0 #remove
-    print(clicks)
-    print(dictSave['final_listPOS'])
+    # print(clicks)
+    # print(dictSave['final_listPOS'])
     if clicks!=None:
         # Write PDF
         pdf = PDF()
@@ -2823,7 +2895,7 @@ def calculatePDFvalues( matches, dataPP, data, timevar,click, SCtext1, SCtext2, 
     PPtext.extend((PPtext1, PPtext2, PPtext3))
     regex=[]
     regex.extend((regex1,regex2,regex3))
-
+    final_listPOS=[]
 
     if len(matchInitial)!=0 and len(matchFinal)!=0:
         for j in range(len(timevar)):
@@ -2842,7 +2914,7 @@ def calculatePDFvalues( matches, dataPP, data, timevar,click, SCtext1, SCtext2, 
             Signals.append(datay)
 
 
-    final_listPOS=calculatePos(timevar, matches) #esta merda esta a dar erro, rever
+        final_listPOS=calculatePos(timevar, matches) #esta merda esta a dar erro, rever
     # print(final_listPOS)
     # for i in range(len(matches_final)):
 
