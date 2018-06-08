@@ -155,8 +155,9 @@ def UpdateTimeVarGraph(traces, selected_option,clicks):
     # #     straightness_replicated.append([space_var['straightness']][i] * cutIndex[i])
     # # print('ay')
     # print(straightness_replicated[0])
-
-    if (str(selected_option) in ("vt, vx, vy, a, jerk")):
+    print(selected_option)
+    if (str(selected_option) in {'vt', 'vx', 'vy', 'a', 'jerk'})    :
+        print('why you lieing')
 
         traces.append(go.Scatter(
             x=time_var['ttv'],
@@ -185,7 +186,7 @@ def UpdateTimeVarGraph(traces, selected_option,clicks):
         #         name=str(selected_option)
         #     ))
 
-    elif (str(selected_option) in ("xt, yt")):
+    elif (str(selected_option) in {'xt', 'yt'}):
         traces.append(go.Scatter(
             x=time_var['tt'],
             y=time_var[str(selected_option)],
@@ -211,7 +212,7 @@ def UpdateTimeVarGraph(traces, selected_option,clicks):
         #         # line={'width': 2},
         #         name=str(selected_option)
         #     ))
-    elif (str(selected_option) in ("xs, ys")):
+    elif (str(selected_option) in {'xs', 'ys'}):
         traces.append(go.Scatter(
             x=space_var['ts'],
             y=space_var[str(selected_option)],
@@ -462,6 +463,32 @@ def UpdateTimeVarGraph(traces, selected_option,clicks):
             # line={'width': 2},
             name=str(selected_option)
         ))
+    elif (str(selected_option) == 'x'):
+        traces.append(go.Scatter(
+            x=MouseDict['t'],
+            y=MouseDict['x'],
+            text=selected_option,
+            opacity=0.7,
+            marker={
+                'size': 5,
+                'line': {'width': 0.5, 'color': 'white'}
+            },
+            # line={'width': 2},
+            name=str(selected_option)
+        ))
+    elif (str(selected_option) == 'y'):
+        traces.append(go.Scatter(
+            x=MouseDict['t'],
+            y=MouseDict['y'],
+            text=selected_option,
+            opacity=0.7,
+            marker={
+                'size': 5,
+                'line': {'width': 0.5, 'color': 'white'}
+            },
+            # line={'width': 2},
+            name=str(selected_option)
+        ))
 
     return traces
 
@@ -488,7 +515,9 @@ def createLayoutTimevar(value, clicks, traces):
         time='Time passed',
         clicks='Clicks',
         question='Questions',
-        ss='Space Traveled'
+        ss='Space Traveled',
+        x='X position in time not interpolated',
+        y='y position in time not interpolated'
          )
     shapes = []
     if clicks==1:
@@ -936,7 +965,9 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                 {'label' : 'Time Passed', 'value': 'time'},
                 {'label' : 'Clicks', 'value': 'clicks'},
                 {'label' : 'Question', 'value': 'question'},
-                {'label' : 'Space Traveled', 'value': 'ss'}
+                {'label' : 'Space Traveled', 'value': 'ss'},
+                {'label' : 'X position in time not interpolated', 'value': 'x'},
+                {'label' : 'Y position in time not interpolated', 'value': 'y'}
             ],
             multi=True,
             placeholder="",
@@ -1480,7 +1511,9 @@ def updateDropdownSearch(selected_options):
         pausescumsum='Cumulative Sum of Pauses',
         time='Time Passed',
         clicks='Clicks',
-        question='Questions'
+        question='Questions',
+        x='x in time not interpolated',
+        y='y in time not interpolated'
          )
     spaceVar_Dict=dict(
         xs='X interpolated in space',
@@ -1558,7 +1591,7 @@ def updateHiddenDiv(regex0, regex1, regex2,  string, n_clicks):
 
                 for i in regit: #itera no proprio sinal
                     matchInitial[j].append((int(i.span()[0]))) #isto esta a dar a posiçao a começar em 1 por isso dava erro se houvesse match no ultimo ponto
-                    matchFinal[j].append(int(i.span()[1]))
+                    matchFinal[j].append(int(i.span()[1])-1)
 
             matchInitial=list(filter(None, matchInitial))  #para remover as entries vazias
             matchFinal = list(filter(None, matchFinal))
@@ -1571,6 +1604,7 @@ def updateHiddenDiv(regex0, regex1, regex2,  string, n_clicks):
             # print(matches)
     print('hidden')
     print(matches)
+    print(len(string[0]))
     return json.dumps(matches, sort_keys=True)
 
 #Display hidden Content - PP, SC and regex
@@ -1647,7 +1681,8 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
     global lastclick2
     global matches_final
     matches=json.loads(matches)
-    # print(matches)
+    print('regexgraph')
+    print(matches)
 
     timevars_initial=json.loads(timevars_initial)
     # print(timevars_initial)
@@ -1682,6 +1717,8 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
 
                 datax = np.array(data['data']['data'][j]['x'])
                 datay= np.array(data['data']['data'][j]['y'])
+                print('len')
+                print(len(datax))
                 matches_final=[]
                 for i in range(len(matchFinal[j])): #cria uma lista com os indexes de todas as matches
                     matches_final.extend(range(matchInitial[j][i], matchFinal[j][i])) #nao considera a matchFinal como match, seria preciso por +1 aqui
@@ -2008,9 +2045,12 @@ def SymbolicConnotationStringParser(n_clicks, data, parse, parse1, parse2, time_
             #         finalString.append(RiseAmp(data['data']['data'][0]['y'], float(CutString[i + 1]))) #nao sei se esta a fazer bem
           # finalString=merge_chars(np.array(finalString))  # esta a dar um erro estranho quando escrevo a caixa--FIXED
         lastclick1 = n_clicks
+    print('len SC')
+    print(len(data['data']['data'][0]['x']))
     # print(finalString)
     # print(len(finalString))
     # print(finalString)
+    print(len(finalString[0]))
     return finalString
 
 
@@ -2064,6 +2104,8 @@ def PreProcessStringParser(n_clicks, data, parse, parse1, parse2, time_Vars):
     # print(parse2)
     # print(data['data'][0])
     # print(data['data'][1])
+    print('antespp')
+    print(len(data['data'][0]['x']))
     if (n_clicks != None):
         if(n_clicks>lastclick): # para fazer com que o graf so se altere quando clicamos no botao e nao devido aos outros callbacks-grafico ou input box
 
@@ -2107,8 +2149,8 @@ def PreProcessStringParser(n_clicks, data, parse, parse1, parse2, time_Vars):
             #     elif (CutString[i] == 'ABS'):
             #         #Function Absolute
             #         data['data'][0]['y']=np.absolute(data['data'][0]['y'])
-
-
+        print('len PP')
+        print(len(data['data'][0]['x']))
         lastclick=n_clicks
     return {
         'data': data,
@@ -2338,6 +2380,7 @@ def update_timevarfigure(selected_option, values):
 def interpolate_graf(value, json_data, timevar, logic, image):
     global MouseDict
     global space_var
+    global time_var
     global clickIndex
     global Scroll
     global MouseDictOriginal
@@ -2444,14 +2487,15 @@ def interpolate_graf(value, json_data, timevar, logic, image):
 
         if(value[i]=='interpolate'):
             traces.append(go.Scatter(
-                x=space_var['xs'],
-                y=space_var['ys'],
+                x=time_var['xt'],
+                y=time_var['yt'],
                 # text=selected_option[0],
                 opacity=0.7,
                 # marker={
                 #     'size': 5,
                 #     'line': {'width': 0.5, 'color': 'white'}
                 # },
+                mode='lines',
                 line={'width': 2, 'color': 'black'},
                 name="Interpolated Position"
             ))
@@ -2645,13 +2689,17 @@ def interpolate_graf(value, json_data, timevar, logic, image):
         time_array=np.array(MouseDict['t'])
         listA=["vt", "vx", "vy", "a", "jerk"]
         listB=["xt", "yt"]
-        listC=['straight', 'lenStrokes', 'pausescumsum', 'time', 'clicks']
-        listD=['curvatures', 'angles', 'w', 'var_curvatures']
+        listC=['straight', 'lenStrokes', 'pausescumsum', 'time', 'clicks', 'x', 'y']
+        listD=['curvatures', 'angles', 'w', 'var_curvatures', 'xs', 'ys']
 
         # print(time_var['ttv'][matchInitial[0][0]])
         # print(time_var['ttv'][matchFinal[0][0]])
         # print(timevar)
-
+        # print('matchup')
+        # print(matches)
+        # print(matchFinal)
+        # print(matchInitial)
+        # print(len(space_var['ts']))
         for j in range(len(timevar)): #para iterar entre os varios sinais
 
 
@@ -2666,16 +2714,17 @@ def interpolate_graf(value, json_data, timevar, logic, image):
             if(timevar[j] in listB):
                 for i in range (len(matchInitial[j])): #esta a sair fora do sinal qd a match é o ultimo ponto, acho que nao esta correcto assim
                     if i == len(matchInitial[j])-1:
-                        nova_lista[j].append(np.where((time_array >= time_var['tt'][matchInitial[j][i]]) & (time_array <= time_var['tt'][matchFinal[j][i]-1])))
+                        nova_lista[j].append(np.where((time_array >= time_var['tt'][matchInitial[j][i]]) & (time_array <= time_var['tt'][matchFinal[j][i]-1])))#TODO: REVER ESTES LIMITES FINAIS DAS MATCHES #é bem capaz de isto estar mal
                     else:
                         nova_lista[j].append(np.where( (time_array>= time_var['tt'][matchInitial[j][i]]) & (time_array<= time_var['tt'][matchFinal[j][i]]) )) #pus -1 porque estava a sair fora do vector
 
-            if(timevar[j] in listC):
+            if(timevar[j] in listC): #as matches ja sao dadas no vector de tempo mouseDict['t'], logo nao preciso de procurar
                 for i in range(len(matchInitial[j])):
                     flat_list[j].extend(range(matchInitial[j][i], matchFinal[j][i]))
 
             if (timevar[j] in listD):
-                print('we in')
+                print('len')
+                print(len(matchInitial[j]))
                 for i in range(len(matchInitial[j])):  # esta a sair fora do sinal qd a match é o ultimo ponto, acho que nao esta correcto assim
                     if i == len(matchInitial[j]) - 1:
                         nova_lista[j].append(np.where((time_array >= space_var['ts'][matchInitial[j][i]]) & (time_array <= space_var['ts'][matchFinal[j][i] - 1])))

@@ -66,7 +66,8 @@ def RiseAmp(Signal, t):
 
 def AmpC(s, t, p='>'):
 
-
+    if( s=='None'):
+        print('something missing ehre')
     thr = (float(np.max(s) - np.min(s)) * t) + np.min(s)
     if (p == '<'):
         s1 = (s <= (thr)) * 1
@@ -76,7 +77,7 @@ def AmpC(s, t, p='>'):
     return s1
 
 def absAmp(s, t1, t2):
-    s1=[]
+    s1=np.empty(len(s), dtype=str)
     print(t1)
     print(t2)
     for i in s:
