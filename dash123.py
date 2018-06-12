@@ -26,6 +26,7 @@ from plotly import tools
 import pylab as pl
 from itertools import groupby, count
 from fpdf import FPDF
+import xlwt
 
 traces =[]
 preva1= 0
@@ -155,9 +156,9 @@ def UpdateTimeVarGraph(traces, selected_option,clicks):
     # #     straightness_replicated.append([space_var['straightness']][i] * cutIndex[i])
     # # print('ay')
     # print(straightness_replicated[0])
-    print(selected_option)
+    # print(selected_option)
     if (str(selected_option) in {'vt', 'vx', 'vy', 'a', 'jerk'})    :
-        print('why you lieing')
+
 
         traces.append(go.Scatter(
             x=time_var['ttv'],
@@ -929,13 +930,14 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                         # style={'width': '100%'} # aparentemente nao da para mexer no estilo deste mambo
                         ),
                 html.Button('Search Regex', id='searchregex', style=styleB),
-                html.Button('Save Search in PDF', id='savePDF', style={'display': 'none'})
+                html.Button('Save Search in PDF', id='savePDF', style={'display': 'none'}),
+                html.Button('Save Values in Excel', id='saveExcel', style={'display': 'none'})
                         ],
                          style={
                             'width': '25%',
                             'fontFamily': 'Sans-Serif',
                             'float' : 'left',
-                            'backgroundColor': colors['background']}
+                            'backgroundColor': colors['background']},
 
 
         )], style={'float':'left', 'width':'20%', 'margin-left':'5%'}),
@@ -982,6 +984,7 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
     html.Div(id='hiddenDiv_FinalString', style={'display': 'none'}),
     html.Div(id='hiddenDiv_PDF', style={'display': 'none'}),
     html.Div(id='hiddenDiv_PDFvalues', style={'display': 'none'}),
+    html.Div(id='hiddenDiv_Excel', style={'display': 'none'}),
     html.Div([
         html.Button('Show Space Vars', id='showSpaceVar'),
         dcc.Markdown(id ='text_spacevar')]
@@ -1338,7 +1341,8 @@ def createDictionary(df):
 
     # print(len(MouseTime))
     # print(len(time_var['ttv']))
-    print('plsbasedgod')
+    print(len(time_var['xt']))
+    print(len(time_var['vt']))
     print(len(space_var['w']))
     print(len(space_var['ts']))
     print(space_var['ts'])
@@ -1491,13 +1495,27 @@ def showSavebutton(matches):
         return {'display':'none'}
 
 @app.callback(
+    dash.dependencies.Output('saveExcel', 'style'),
+    [dash.dependencies.Input('hiddenDiv', 'children')])
+def showSavebutton(matches):
+    matches = json.loads(matches)
+
+    if len(matches['matchInitial']) != 0 and len(matches['matchFinal']) != 0:
+        return {'display': 'inline-block'}
+    else:
+        return {'display': 'none'}
+
+
+@app.callback(
     dash.dependencies.Output('dropdown_Search', 'options'),
     [dash.dependencies.Input('hiddenDiv_timevar', 'children')],
     # [dash.dependencies.State('dropdown_Search', 'options')]
 )
 def updateDropdownSearch(selected_options):
     selected_options=json.loads(selected_options)
-
+    print('dropdownsearch')
+    print(selected_options)
+    print(selected_options[0])
     timeVar_Dict=dict(vt='Velocity in time',
          vy='Velocity in Y',
          vx='Velocity in X',
@@ -1513,17 +1531,18 @@ def updateDropdownSearch(selected_options):
         clicks='Clicks',
         question='Questions',
         x='x in time not interpolated',
-        y='y in time not interpolated'
+        y='y in time not interpolated',
+      xs='X interpolated in space',
+      ys='Y interpolated in space',
+      angles='Angles',
+      curvatures='Curvature',
+      w='Angular Velocity',
+      var_curvatures='Variation of Curvature',
+      ss='Space Traveled'
          )
-    spaceVar_Dict=dict(
-        xs='X interpolated in space',
-        ys='Y interpolated in space',
-        angles='Angles',
-        curvatures='Curvature',
-        w='Angular Velocity',
-        var_curvatures='Variation of Curvature',
-        ss='Space Traveled'
-    )
+    # spaceVar_Dict=dict(
+    #
+    # )
 
     current_options=[]
     # print(selected_options)
@@ -1531,9 +1550,6 @@ def updateDropdownSearch(selected_options):
         if selected_options[i] in timeVar_Dict:
 
             current_options.append({'label': timeVar_Dict[str(selected_options[i])], 'value': selected_options[i]})
-        if selected_options[i] in spaceVar_Dict:
-            current_options.append({'label': spaceVar_Dict[str(selected_options[i])], 'value': selected_options[i]})
-
     if len(selected_options) == 2: #deve haver uma forma melhor de iterar isto para que independentemente da qtd de sinais escolhidos
             # for j in range(len(selected_options)):
         current_options.append({'label':timeVar_Dict[str(selected_options[0])]+ " and "+ timeVar_Dict[str(selected_options[1])], 'value': selected_options[0]+ " " +selected_options[1]})
@@ -1602,7 +1618,7 @@ def updateHiddenDiv(regex0, regex1, regex2,  string, n_clicks):
             matches['matchFinal']= matchFinal.tolist()
             # print(len(string[0]))
             # print(matches)
-    print('hidden')
+    # print('hidden')
     print(matches)
     print(len(string[0]))
     return json.dumps(matches, sort_keys=True)
@@ -1681,7 +1697,7 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
     global lastclick2
     global matches_final
     matches=json.loads(matches)
-    print('regexgraph')
+    # print('regexgraph')
     print(matches)
 
     timevars_initial=json.loads(timevars_initial)
@@ -1730,15 +1746,19 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
                             x=datax[matches_final], #NOTA TENHO DE TER EM CONTA SE QUISER MOSTRAR UM SINAL NAO TRATADO
                             y=datay[matches_final],
                             # text=selected_option[0],
-                            mode='markers',
+                            # mode='lines',
                             opacity=0.7,
-                            marker=dict(
-                                size=5,
+
+                            line=dict(
+                                width=3,
+                                # size=5,
                                 color='#6666ff',
-                                line=dict(
-                                    width=2)
+                                # line=dict(
+                                #     width=2),
+
 
                             ),
+                        connectgaps=False,
                         #     # xaxis='x'+ str(counter),
                         #     # yaxis='y1'+str(counter),
                             name='Match'
@@ -2690,7 +2710,7 @@ def interpolate_graf(value, json_data, timevar, logic, image):
         listA=["vt", "vx", "vy", "a", "jerk"]
         listB=["xt", "yt"]
         listC=['straight', 'lenStrokes', 'pausescumsum', 'time', 'clicks', 'x', 'y']
-        listD=['curvatures', 'angles', 'w', 'var_curvatures', 'xs', 'ys']
+        listD=['curvatures', 'angles', 'w', 'var_curvatures', 'xs', 'ys', 'ss']
 
         # print(time_var['ttv'][matchInitial[0][0]])
         # print(time_var['ttv'][matchFinal[0][0]])
@@ -2714,7 +2734,7 @@ def interpolate_graf(value, json_data, timevar, logic, image):
             if(timevar[j] in listB):
                 for i in range (len(matchInitial[j])): #esta a sair fora do sinal qd a match é o ultimo ponto, acho que nao esta correcto assim
                     if i == len(matchInitial[j])-1:
-                        nova_lista[j].append(np.where((time_array >= time_var['tt'][matchInitial[j][i]]) & (time_array <= time_var['tt'][matchFinal[j][i]-1])))#TODO: REVER ESTES LIMITES FINAIS DAS MATCHES #é bem capaz de isto estar mal
+                        nova_lista[j].append(np.where((time_array >= time_var['tt'][matchInitial[j][i]]) & (time_array <= time_var['tt'][matchFinal[j][i]-1])))#    TODO: REVER ESTES LIMITES FINAIS DAS MATCHES #é bem capaz de isto estar mal
                     else:
                         nova_lista[j].append(np.where( (time_array>= time_var['tt'][matchInitial[j][i]]) & (time_array<= time_var['tt'][matchFinal[j][i]]) )) #pus -1 porque estava a sair fora do vector
 
@@ -2836,6 +2856,112 @@ def interpolate_graf(value, json_data, timevar, logic, image):
     }
 
 @app.callback(
+    dash.dependencies.Output('hiddenDiv_Excel', 'value'),
+    [
+     dash.dependencies.Input('hiddenDiv_PDFvalues', 'children'),
+        dash.dependencies.Input('saveExcel', 'n_clicks')]
+)
+def createExcel( info, clicks):
+    global MouseDict
+    global MouseDictOriginal
+    dictSave = json.loads(info)
+    clickValue = 0
+    sheet='New sheet'
+    timeVar_Dict = dict(vt='Velocity in time',
+                        vy='Velocity in Y',
+                        vx='Velocity in X',
+                        jerk='Jerk',
+                        a='Acceleration in time',
+                        xt='X position in time',
+                        yt='Y position in time',
+                        pauses='Pauses',
+                        straight='Straightness',
+                        lenStrokes='Length of Strokes',
+                        pausescumsum='Cumulative Sum of Pauses',
+                        time='Time Passed',
+                        clicks='Clicks',
+                        xs='X interpolated in space',
+                        ys='Y interpolated in space',
+                        angles='Angles',
+                        curvatures='Curvature',
+                        w='Angular Velocity',
+                        var_curvatures='Variation of Curvature'
+                        )
+    # final_listPOS = np.asarray(dictSave['final_listPOS'], dtype=np.int64)
+    if clicks != None:
+        book = xlwt.Workbook()
+        sh = book.add_sheet(sheet)
+
+        # variables = [x, y, z]
+        signalString= 'Unprocessed Signal'
+        signalPPString = 'Processed Signal'
+        signalSCString = 'Symbolic Signal'
+        signalMatchPos= 'Position of Matches'
+        stringMatchX='X coordinate of match'
+        stringMatchY = 'Y coordinate of match'
+        # desc = [x_desc, y_desc, z_desc]
+
+        # for n, v_desc, v in enumerate(zip(desc, variables)):
+        #     sh.write(n, 0, v_desc)
+        #     sh.write(n, 1, v)
+        for i in range(len(dictSave['timevar'])):
+            print('types')
+            # print(MouseDict['x'][dictSave['final_listPOS'][i]].dtype)
+            # print(MouseDict['x'][dictSave['final_listPOS']].dtype)
+            # print(type(dictSave['final_listPOS'][i]))
+            # print(type(dictSave['final_listPOS']))
+            # M = np.asarray(dictSave['final_listPOS'][i], dtype=np.float64)
+            MouseDict['x'].tolist()
+            MouseDict['y'].tolist()
+            MouseDictOriginal['x'].tolist()
+            MouseDictOriginal['y'].tolist()
+            print(i)
+            print(len(dictSave['timevar']))
+            print(dictSave['timevar'])
+            # print(dictSave['Signals'])
+            sh.write(0,0 + 9 *i, str(timeVar_Dict[dictSave['timevar'][i]]))
+            sh.write(0, 1+ 9 *i, "Time")
+            sh.write(0, 2+ 9 *i, signalString)
+            sh.write(0, 3+ 9 *i, signalPPString)
+            sh.write(0, 4+ 9 *i, signalSCString)
+            sh.write(0, 5+ 9 *i, signalMatchPos)
+            sh.write(0, 6+ 9 *i, stringMatchX)
+            sh.write(0, 7+ 9 *i, stringMatchY)
+
+            for m1, e1 in enumerate(dictSave['SignalsX'][i]):
+                sh.write(m1+1, 1+ 9 *i, e1)
+            for m2, e2 in enumerate(dictSave['SignalsY'][i]):
+                sh.write(m2+1, 2+ 9 *i, e2)
+            for m3, e3 in enumerate(dictSave['SignalsPP'][i]):
+                sh.write(m3+1, 3+ 9 *i, e3)
+            for m4, e4 in enumerate(dictSave['SC'][i]):
+                sh.write(m4+1, 4+ 9 *i, e4)
+            for m5, e5 in enumerate(dictSave['matches_final'][i]):
+                sh.write(m5+1, 5+ 9 *i, e5)
+            if dictSave['timevar'][i] == 'clicks':
+                listPosXOriginal=MouseDictOriginal['x'][dictSave['final_listPOS'][i]]
+                listPosYOriginal=MouseDictOriginal['y'][dictSave['final_listPOS'][i]]
+                listPosXOriginal = listPosXOriginal.tolist()
+                listPosYOriginal=listPosYOriginal.tolist()
+                for m6, e6 in enumerate(listPosXOriginal):
+                    sh.write(m6+1, 6+ 9 *i, e6)
+                for m7, e7 in enumerate(listPosYOriginal):
+                    sh.write(m7+1, 7+ 9 *i, e7)
+            else:
+                listPosX=MouseDict['x'][dictSave['final_listPOS'][i]].astype(numpy.float64) #nao aceita numpy array, tem de ser list
+                listPosY=MouseDict['y'][dictSave['final_listPOS'][i]].astype(numpy.float64)
+                listPosX=listPosX.tolist()
+                listPosY=listPosY.tolist()
+                for m6, e6 in enumerate(listPosX):
+                    sh.write(m6+1, 6+ 9 *i, e6)
+                for m7, e7 in enumerate(listPosY):
+                    sh.write(m7+1, 7+ 9 *i, e7)
+
+        book.save('FileExcel')
+    clickValue = clicks
+    return clicks
+
+@app.callback(
     dash.dependencies.Output('hiddenDiv_PDF', 'value'),
     [
      dash.dependencies.Input('hiddenDiv_PDFvalues', 'children'),
@@ -2875,6 +3001,8 @@ def createPDF( info, clicks):
     # print(clicks)
     # print(dictSave['final_listPOS'])
     if clicks!=None:
+
+        # print(dictSave['Signals'])
         # Write PDF
         pdf = PDF()
         pdf.alias_nb_pages()
@@ -2885,12 +3013,13 @@ def createPDF( info, clicks):
             pdf.cell(0, 10, 'PreProcessing Method Used: ' + str(dictSave['PPtext'][i]), 0, 1)
             pdf.cell(0, 10, 'Symbolic Connotation Method Used: ' + str(dictSave['SCtext'][i]), 0, 1)
             pdf.cell(0, 10, 'Regex Searched: ' + str(dictSave['regex'][i]), 0, 1)
-            pdf.cell(0, 10, 'Unprocessed Signal: ' + str(dictSave['Signals'][i]), 0, 1)
+            pdf.cell(0, 10, 'Time: ' + str(dictSave['SignalsX'][i]), 0, 1)
+            pdf.cell(0, 10, 'Unprocessed Signal: ' + str(dictSave['SignalsY'][i]), 0, 1)
             pdf.cell(0, 10, 'Processed Signal: ' + str(dictSave['SignalsPP'][i]), 0, 1)
             pdf.cell(0, 10, 'Number of Matches: ' + str(dictSave['NrofMatches'][i]), 0, 1)
             pdf.cell(0, 10, 'List of Matches Position: ' + str(dictSave['matches_final'][i]), 0, 1)
             pdf.cell(0, 10, '% of matches: ' + str(dictSave['matchPercentage'][i]), 0, 1)
-            if dictSave['timevar']=='clicks': #por causa da artimanha do MouseDictOriginal
+            if dictSave['timevar'][i]=='clicks': #por causa da artimanha do MouseDictOriginal
                     pdf.cell(0, 10, 'Position of Matches: ', 0, 1)
                     pdf.cell(0, 10,'X: ' + str(MouseDictOriginal['x'][dictSave['final_listPOS'][i]]), 0, 1)
                     pdf.cell(0, 10, 'Y: ' + str(MouseDictOriginal['y'][dictSave['final_listPOS'][i]]), 0, 1)
@@ -2923,10 +3052,13 @@ def createPDF( info, clicks):
       dash.dependencies.State('PreProcessing2', 'value'),
      dash.dependencies.State('regex', 'value'),
      dash.dependencies.State('regex1', 'value'),
-     dash.dependencies.State('regex2', 'value')
+     dash.dependencies.State('regex2', 'value'),
+    dash.dependencies.State('SCresult', 'value'),
+    dash.dependencies.State('SCresult1', 'value'),
+    dash.dependencies.State('SCresult2', 'value')
       ]
 )
-def calculatePDFvalues( matches, dataPP, data, timevar,click, SCtext1, SCtext2, SCtext3, PPtext1, PPtext2, PPtext3, regex1, regex2, regex3):
+def calculatePDFvalues( matches, dataPP, data, timevar,click, SCtext1, SCtext2, SCtext3, PPtext1, PPtext2, PPtext3, regex1, regex2, regex3, SC1, SC2, SC3):
 
     matches=json.loads(matches)
     timevar=json.loads(timevar)
@@ -2935,7 +3067,8 @@ def calculatePDFvalues( matches, dataPP, data, timevar,click, SCtext1, SCtext2, 
 
     matches_final=[]
     matchPercentage=[]
-    Signals=[]
+    SignalsX=[]
+    SignalsY = []
     SignalsPP=[]
     NrofMatches=[]
     SCtext=[]
@@ -2945,6 +3078,8 @@ def calculatePDFvalues( matches, dataPP, data, timevar,click, SCtext1, SCtext2, 
     regex=[]
     regex.extend((regex1,regex2,regex3))
     final_listPOS=[]
+    SC=[]
+    SC.extend((SC1, SC2, SC3))
 
     if len(matchInitial)!=0 and len(matchFinal)!=0:
         for j in range(len(timevar)):
@@ -2960,7 +3095,8 @@ def calculatePDFvalues( matches, dataPP, data, timevar,click, SCtext1, SCtext2, 
             matchPercentage.append((len(matches_intermediate)/len(dataxPP))*100)
             SignalsPP.append(datayPP)
             matches_final.append(matches_intermediate)
-            Signals.append(datay)
+            SignalsX.append(datax)
+            SignalsY.append(datay)
 
 
         final_listPOS=calculatePos(timevar, matches) #esta merda esta a dar erro, rever
@@ -2978,15 +3114,19 @@ def calculatePDFvalues( matches, dataPP, data, timevar,click, SCtext1, SCtext2, 
     SCtext = list(filter(None, SCtext))
     PPtext = list(filter(None, PPtext))
     regex = list(filter(None, regex))
+    SC=list(filter(None, SC))
 
     # for i in range(len(matchPercentage)):
     #     Signals[i].tolist()
     #     SignalsPP[i].tolist()
-    Signals=[l.tolist() for l in Signals]
+    SignalsX= [l.tolist() for l in SignalsX]
+    SignalsY=[l.tolist() for l in SignalsY]
     SignalsPP = [l.tolist() for l in SignalsPP]
+    # if type(final_listPOS) is not list: #estava a dar erro para a timevar=straightness por isso pus esta exception
     final_listPOS= [l.tolist() for l in final_listPOS]
     # matches_final = [l.tolist() for l in matches_final]
-    Signals=list(Signals)
+    SignalsX=list(SignalsX)
+    SignalsY = list(SignalsY)
     SignalsPP = list(SignalsPP)
     NrofMatches=list(NrofMatches)
     final_listPOS=list(final_listPOS)
@@ -3000,7 +3140,8 @@ def calculatePDFvalues( matches, dataPP, data, timevar,click, SCtext1, SCtext2, 
     dictSave={
         "NrofMatches":NrofMatches,
          "matchPercentage" : matchPercentage,
-        "Signals": Signals,
+        "SignalsX": SignalsX,
+        "SignalsY": SignalsY,
         "SignalsPP" : SignalsPP,
         "final_listPOS": final_listPOS,
         "matches_final" :matches_final,
@@ -3008,6 +3149,7 @@ def calculatePDFvalues( matches, dataPP, data, timevar,click, SCtext1, SCtext2, 
         "PPtext": PPtext,
         "SCtext" :SCtext,
         "regex" : regex,
+        "SC": SC,
     }
 
     return json.dumps(dictSave, sort_keys=True)
