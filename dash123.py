@@ -496,6 +496,7 @@ def UpdateTimeVarGraph(traces, selected_option,clicks):
 def createLayoutTimevar(value, clicks, traces):
     global clickIndex
     global MouseDict
+    global MouseDictOriginal
     Titles=dict(vt='Velocity in time',
          vy='Velocity in Y',
          vx='Velocity in X',
@@ -526,9 +527,9 @@ def createLayoutTimevar(value, clicks, traces):
         for i in clickIndex:
             shape={
                 'type': 'line',
-                'x0':MouseDict['t'][i],
+                'x0':MouseDictOriginal['t'][i],
                 'y0': max(traces[0]['y']),
-                'x1': MouseDict['t'][i],
+                'x1': MouseDictOriginal['t'][i],
                 'y1': min(traces[0]['y']),
                 'fillcolor': '#A7CCED',
                 'opacity': 0.7,
@@ -1251,16 +1252,23 @@ def createDictionary(df):
     #         print(MouseClicks[i])
     #         MouseClicks[i-1]=1
 
-
+    clickIndex=[]
+    ClickCounterOriginal=0
+    for i in range(len(MouseClicks)):
+        if MouseClicks[i]==1:
+            clickIndex.append(i)
+            ClickCounterOriginal =ClickCounterOriginal+1
+    print('NR DE CLICKS')
+    print(ClickCounterOriginal)
 
     MouseClicks=np.delete(MouseClicks, lista_index)
 
 
 #saber o index dos clicks depois de removidos os duplicates
-    clickIndex=[]
-    for i in range(len(MouseClicks)):
-        if MouseClicks[i]==1:
-            clickIndex.append(i)
+    # clickIndex=[]
+    # for i in range(len(MouseClicks)):
+    #     if MouseClicks[i]==1:
+    #         clickIndex.append(i)
     # print(len(clickIndex))
     # print(clickIndex)
     # print('x new')
@@ -1607,7 +1615,7 @@ def updateHiddenDiv(regex0, regex1, regex2,  string, n_clicks):
 
                 for i in regit: #itera no proprio sinal
                     matchInitial[j].append((int(i.span()[0]))) #isto esta a dar a posiçao a começar em 1 por isso dava erro se houvesse match no ultimo ponto
-                    matchFinal[j].append(int(i.span()[1])-1)
+                    matchFinal[j].append(int(i.span()[1]))
 
             matchInitial=list(filter(None, matchInitial))  #para remover as entries vazias
             matchFinal = list(filter(None, matchFinal))
@@ -1726,8 +1734,9 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
 
                 matchInitial = np.array(matches['matchInitial'])
                 matchFinal = np.array(matches['matchFinal'])
-                # print(matchInitial)
-                # print(matches)
+                print('merda funciona')
+                print(matchInitial)
+                print(matches)
 
 
 
@@ -1738,19 +1747,21 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
                 matches_final=[]
                 for i in range(len(matchFinal[j])): #cria uma lista com os indexes de todas as matches
                     matches_final.extend(range(matchInitial[j][i], matchFinal[j][i])) #nao considera a matchFinal como match, seria preciso por +1 aqui
-
+                print('heckye')
+                print(matches_final)
                 # print(matches_final)
                 if (len(matchInitial[j])>0 and len(matchFinal[j])>0 ):
+
 
                     traces_matches.append(go.Scatter(  # match initial append
                             x=datax[matches_final], #NOTA TENHO DE TER EM CONTA SE QUISER MOSTRAR UM SINAL NAO TRATADO
                             y=datay[matches_final],
                             # text=selected_option[0],
-                            # mode='lines',
+                            mode='markers',
                             opacity=0.7,
 
-                            line=dict(
-                                width=3,
+                            marker=dict(
+                                # width=3,
                                 # size=5,
                                 color='#6666ff',
                                 # line=dict(
@@ -2646,8 +2657,8 @@ def interpolate_graf(value, json_data, timevar, logic, image):
             ))
         if (value[i] == 'clicks'):
             traces.append(go.Scatter(
-                x=MouseDict['x'][clickIndex],
-                y=MouseDict['y'][clickIndex],
+                x=MouseDictOriginal['x'][clickIndex],
+                y=MouseDictOriginal['y'][clickIndex],
                 # text=selected_option[0],
                 mode='markers',
                 opacity=0.7,
@@ -3010,7 +3021,7 @@ def createPDF( info, clicks):
         pdf.set_font('Times', '', 12)
         for i in range(len(dictSave['SCtext'])): #para percorrer os varios sinais, podia ter escolhido outra var doesnt matter
             pdf.cell(0, 10, 'Signal Analysed: ' + str(timeVar_Dict[dictSave['timevar'][i]]), 0, 1)
-            pdf.cell(0, 10, 'PreProcessing Method Used: ' + str(dictSave['PPtext'][i]), 0, 1)
+            pdf.cell(0, 10, 'PreProcessing Method Used: ' + str(dictSave['PPtext'][i]), 0, 1) #TODO: pode estar vazio e depois da erro
             pdf.cell(0, 10, 'Symbolic Connotation Method Used: ' + str(dictSave['SCtext'][i]), 0, 1)
             pdf.cell(0, 10, 'Regex Searched: ' + str(dictSave['regex'][i]), 0, 1)
             pdf.cell(0, 10, 'Time: ' + str(dictSave['SignalsX'][i]), 0, 1)

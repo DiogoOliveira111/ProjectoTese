@@ -3,7 +3,7 @@ from AuxiliaryMethods import detect_peaks
 import math
 
 # Connotation Methods
-def DiffC(s, t, signs=['-', '_', '+']):
+def DiffC(s, t, signs=['N', 'F', 'P']):
     # Quantization of the derivative.
     # TODO: Implement a better way of selecting chars
     ds1 = np.diff(s)
@@ -17,7 +17,7 @@ def DiffC(s, t, signs=['-', '_', '+']):
     return x
 
 
-def Diff2C(s, t, symbols=['-', '_', '+']):
+def Diff2C(s, t, symbols=['N', 'F', 'P']):
     # Quantization of the derivative.
     # TODO: Implement a better threshold methodology.
     dds1 = np.diff(np.diff(s))
