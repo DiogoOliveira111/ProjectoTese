@@ -87,4 +87,14 @@ def absAmp(s, t1, t2):
             s1.append("0")
     return s1
 
+def findDuplicates(s):
+    seen=[]
+    final_String=[]
+    for i in s:
+        if i not in seen:
+            seen.append(i)
+            final_String.append("0")
+        else:
+            final_String.append("1")
+    return final_String
 

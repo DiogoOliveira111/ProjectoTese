@@ -15,7 +15,7 @@ import plotly.figure_factory as ff
 import json
 import pandas as pd
 from ProcessingMethods import smooth, lowpass, highpass, bandpass
-from SymbolicMethods import DiffC, Diff2C, RiseAmp, AmpC, absAmp
+from SymbolicMethods import DiffC, Diff2C, RiseAmp, AmpC, absAmp, findDuplicates
 from AuxiliaryMethods import _plot, detect_peaks,merge_chars
 import base64
 import io
@@ -802,7 +802,7 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                     html.Button('L', id='lowpass', style=styleB, title='LowPass'),
                     html.Button('BP', id='bandpass', style=styleB, title='BandPass'),
                     html.Button('S', id='smooth', style=styleB, title='Smooth'),
-                    html.Button('ABS', id='absolute', style=styleB, title='Module')]
+                    html.Button('ABS', id='absolute', style=styleB, title='Module'),]
                 ),
                 html.Div(id ='PreProcessDiv', children=[
                     dcc.Input(id='PreProcessing',
@@ -843,6 +843,7 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                     html.Button('1D', id='diff1', style=styleB, title='1st Derivative'),
                     html.Button('2D', id='diff2', style=styleB, title='2nd Derivative'),
                     html.Button('RA', id='riseamp', style=styleB, title='RiseAmp'),
+                    html.Button('DUP', id='duplicate', style=styleB, title='Duplicate')
                 ]
                 ),
                 html.Div(id='SymbolicConnotationDiv', children= [
@@ -1970,8 +1971,15 @@ def SCParser(parse, selector, data):
                 # Function RiseAmp
                 finalString[j].append(RiseAmp(data['data']['data'][j]['y'], float(parse[j][i + 1])))  # nao sei se esta a fazer bem
 
-        finalString[j] = merge_chars(np.array(finalString[j]))
+            elif (parse[j][i] == 'DUP'):
+                # Function 2nd Derivative
+                print('ayyy')
+                finalString[j].append(findDuplicates(data['data']['data'][j]['y']))
+                print(finalString)
 
+        finalString[j] = merge_chars(np.array(finalString[j]))
+    print('pullup')
+    print(finalString)
     return finalString
 
 @app.callback(
@@ -1980,11 +1988,12 @@ def SCParser(parse, selector, data):
     dash.dependencies.Input('diff1', 'n_clicks'),
     dash.dependencies.Input('diff2', 'n_clicks'),
     dash.dependencies.Input('riseamp', 'n_clicks'),
-    dash.dependencies.Input('relAmp', 'n_clicks')],
+    dash.dependencies.Input('relAmp', 'n_clicks'),
+    dash.dependencies.Input('duplicate', 'n_clicks')],
     [dash.dependencies.State('SCtext', 'value')]
 )
-def SymbolicConnotationWrite(a1,a2,a3,a4, a5, finalStr):
-    global  preva1, preva2, preva3, preva4, preva5 #banhada com variaveis globais para funcionar, convem mudar
+def SymbolicConnotationWrite(a1,a2,a3,a4, a5,a6, finalStr):
+    global  preva1, preva2, preva3, preva4, preva5, preva6 #banhada com variaveis globais para funcionar, convem mudar
     if(a1!= None): # tem o problema de nao limpar, se calhar precisa de um botao para limpar
         if(a1>preva1): #Amplitude
             finalStr+= '%A '
@@ -2008,6 +2017,10 @@ def SymbolicConnotationWrite(a1,a2,a3,a4, a5, finalStr):
         if (a5 > preva4):
             finalStr += "↥A "
         preva5 = a5
+    if (a6 != None):  # Duplicates
+        if (a6 > preva4):
+            finalStr += "DUP "
+        preva5 = a6
     return str(finalStr)
 
 
