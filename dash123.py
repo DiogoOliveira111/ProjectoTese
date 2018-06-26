@@ -15,7 +15,7 @@ import plotly.figure_factory as ff
 import json
 import pandas as pd
 from ProcessingMethods import smooth, lowpass, highpass, bandpass
-from SymbolicMethods import DiffC, Diff2C, RiseAmp, AmpC, absAmp, findDuplicates
+from SymbolicMethods import DiffC, Diff2C, RiseAmp, AmpC, absAmp, findDuplicates, isFlat, guideFixed
 from AuxiliaryMethods import _plot, detect_peaks,merge_chars
 import base64
 import io
@@ -150,6 +150,11 @@ def UpdateTimeVarGraph(traces, selected_option,clicks):
     global clickVector
     global questionTime
     global questionlist
+    global clickDuration
+    global clickPauses
+    global counterVector
+
+
     # print(MouseTime)
     # straightness_replicated=[]
     # # for i in range(len(space_var['straightness'])):
@@ -490,6 +495,45 @@ def UpdateTimeVarGraph(traces, selected_option,clicks):
             # line={'width': 2},
             name=str(selected_option)
         ))
+    elif (str(selected_option) == 'clicksDuration'):
+        traces.append(go.Scatter(
+            x=MouseDictOriginal['t'],
+            y=clickDuration,
+            text=selected_option,
+            opacity=0.7,
+            marker={
+                'size': 5,
+                'line': {'width': 0.5, 'color': 'white'}
+            },
+            # line={'width': 2},
+            name=str(selected_option)
+        ))
+    elif (str(selected_option) == 'clicksPause'):
+        traces.append(go.Scatter(
+            x=MouseDictOriginal['t'],
+            y=clickPauses,
+            text=selected_option,
+            opacity=0.7,
+            marker={
+                'size': 5,
+                'line': {'width': 0.5, 'color': 'white'}
+            },
+            # line={'width': 2},
+            name=str(selected_option)
+        ))
+    elif (str(selected_option) == 'clicksNumber'):
+        traces.append(go.Scatter(
+            x=MouseDictOriginal['t'],
+            y=counterVector,
+            text=selected_option,
+            opacity=0.7,
+            marker={
+                'size': 5,
+                'line': {'width': 0.5, 'color': 'white'}
+            },
+            # line={'width': 2},
+            name=str(selected_option)
+        ))
 
     return traces
 
@@ -519,7 +563,10 @@ def createLayoutTimevar(value, clicks, traces):
         question='Questions',
         ss='Space Traveled',
         x='X position in time not interpolated',
-        y='y position in time not interpolated'
+        y='y position in time not interpolated',
+        clicksDuration='Clicks- Duration',
+        clicksPause='Clicks- Time between Clicks',
+        clicksNumber='Clicks- Counter'
          )
     shapes = []
     if clicks==1:
@@ -802,7 +849,9 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                     html.Button('L', id='lowpass', style=styleB, title='LowPass'),
                     html.Button('BP', id='bandpass', style=styleB, title='BandPass'),
                     html.Button('S', id='smooth', style=styleB, title='Smooth'),
-                    html.Button('ABS', id='absolute', style=styleB, title='Module'),]
+                    html.Button('ABS', id='absolute', style=styleB, title='Module'),
+                    html.Button('Guide/Fixed', id='guideFixed', style=styleB, title='To detect Guide or Fixed Patterns'),
+                    html.Button('Scroll', id='scroll', style=styleB, title='To detect Scroll Patterns')]
                 ),
                 html.Div(id ='PreProcessDiv', children=[
                     dcc.Input(id='PreProcessing',
@@ -843,7 +892,10 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                     html.Button('1D', id='diff1', style=styleB, title='1st Derivative'),
                     html.Button('2D', id='diff2', style=styleB, title='2nd Derivative'),
                     html.Button('RA', id='riseamp', style=styleB, title='RiseAmp'),
-                    html.Button('DUP', id='duplicate', style=styleB, title='Duplicate')
+                    html.Button('DUP', id='duplicate', style=styleB, title='Duplicate'),
+                    html.Button('Flat', id='isFlat', style=styleB, title='Flat')
+
+
                 ]
                 ),
                 html.Div(id='SymbolicConnotationDiv', children= [
@@ -931,6 +983,15 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                             searchable=False,
                         # style={'width': '100%'} # aparentemente nao da para mexer no estilo deste mambo
                         ),
+                        dcc.RadioItems(id='lengthRadio',
+                            options=[
+                                {'label': 'Longest Event', 'value': 'long'},
+                                {'label': 'Shortest Event', 'value': 'short'},
+                                {'label': 'None', 'value': 'none'}
+
+                            ],
+                            value='none'
+                        ),
                 html.Button('Search Regex', id='searchregex', style=styleB),
                 html.Button('Save Search in PDF', id='savePDF', style={'display': 'none'}),
                 html.Button('Save Values in Excel', id='saveExcel', style={'display': 'none'})
@@ -971,7 +1032,10 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                 {'label' : 'Question', 'value': 'question'},
                 {'label' : 'Space Traveled', 'value': 'ss'},
                 {'label' : 'X position in time not interpolated', 'value': 'x'},
-                {'label' : 'Y position in time not interpolated', 'value': 'y'}
+                {'label' : 'Y position in time not interpolated', 'value': 'y'},
+                {'label' : 'Clicks- Duration', 'value': 'clicksDuration'},
+                {'label' : 'Clicks- Time between Clicks', 'value': 'clicksPause'},
+                {'label' : 'Clicks- Number', 'value': 'clicksNumber'}
             ],
             multi=True,
             placeholder="",
@@ -1017,6 +1081,7 @@ def longest_consecutive_increasing(intvect):
     return curr_count
 
 def find_subsequences(lista):
+
     return [list(g) for k, g in groupby(lista, key=lambda n, c=count(): n - next(c))]
 
 def obtainQuestion(df):
@@ -1090,13 +1155,16 @@ def createDictionary(df):
     global clickVector
     global questionTime
     global questionlist
-
+    global clickDuration
+    global clickPauses
+    global counterVector
+    global flatIndexCounter
 
     MouseX=[]
     MouseY = []
     MouseTime = []
     vars={}
-    df.sort_values(by=[11])
+    df.sort_values(by=[0])
     # print(diff(df[11]))
     # print(df.columns.tolist())
     # print(len(df[3]))
@@ -1145,6 +1213,7 @@ def createDictionary(df):
     for i in range(len(questionTime)):
         questionTime[i]=((questionTime[i]/1000)-initial_time)
 
+    MouseTime.sort()
     # MouseTime=MouseTime[::7]
     # print(questionTime)
     # print(MouseTime)
@@ -1198,12 +1267,88 @@ def createDictionary(df):
 
 #criar o vector de clicks para as timevar
     clickVector=np.zeros(len(MouseTime))
-    for i in range(len((MouseClicks))):
-        if MouseClicks[i]==1 or MouseClicks[i]==4:
+    for i in range(len((MouseClicks))-2): #estou a perder o ultimo click
+        if (MouseClicks[i]==1 and MouseClicks[i+1]==4):
             clickVector[i]=1
+            clickVector[i+1]=1
+        elif (MouseClicks[i]==1 and MouseClicks[i+1]==0 and MouseClicks[i+2]==4):
+            clickVector[i] = 1
+            clickVector[i + 1] = 1
+            clickVector[i + 2] = 1
+
+    print (clickVector)
+#saber indice de clicks e número
 
 
-#descobrir index de posiçoes duplicadas
+    ClickCounterOriginal = 0
+
+
+
+#criar o vector de clickDuration
+    print('abcl')
+    print(clickVector)
+    clickTime=0
+    indexClicks=[]
+    indexNOTClicks=[]
+    clickDuration=np.zeros(len(clickVector))
+    clickPauses = np.zeros(len(clickVector))
+    for index, value in enumerate(clickVector):
+        if value>0:
+          indexClicks.append(index)
+          ClickCounterOriginal = ClickCounterOriginal + 1
+        elif value==0:
+            indexNOTClicks.append(index)
+    print(indexClicks)
+
+    print('NR DE CLICKS')
+    print(ClickCounterOriginal)
+    indexSubsequences=find_subsequences(indexClicks)
+    indexNOTSubsequences=find_subsequences((indexNOTClicks))
+    print(indexSubsequences)
+    counterVector=np.zeros(len(MouseTime))
+    flatIndexCounter = [item for sublist in indexSubsequences for item in sublist] #vector de posiçoes com clicks
+    counterList=list(range(len(indexSubsequences)))
+    clickCount=0
+    for j in range(len(indexSubsequences)):
+        for i in range(len(indexSubsequences[j])):
+            counterVector[indexSubsequences[j][i]]=clickCount
+
+        clickCount = clickCount + 1
+
+    clickDurationSubsequence=[]
+    clickDurationNOTSubsequence = []
+    print(len(MouseTime))
+
+
+    for i in range(len(indexSubsequences)):
+        # print(MouseTime[indexSubsequences[i][-1]]-MouseTime[indexSubsequences[i][0]])
+
+        clickDurationSubsequence.append(MouseTime[indexSubsequences[i][-1]]-MouseTime[indexSubsequences[i][0]])
+        # print(clickDurationSubsequence)
+        # print('holys')
+        # print(MouseTime[692])
+        # print(MouseTime[693])
+    counter=0
+    for i in range(len(indexSubsequences)):
+        for j in indexSubsequences[i]:
+
+
+            clickDuration[j]=clickDurationSubsequence[counter]
+        counter=counter+1
+
+    for i in range(len(indexNOTSubsequences)):
+        clickDurationNOTSubsequence.append(MouseTime[indexNOTSubsequences[i][-1]]-MouseTime[indexNOTSubsequences[i][0]])
+
+    counter1=0
+    for i in range(len(indexNOTSubsequences)):
+        for j in indexNOTSubsequences[i]:
+            clickPauses[j] = clickDurationNOTSubsequence[counter1]
+        counter1 = counter1 + 1
+
+
+
+
+    #descobrir index de posiçoes duplicadas
     lista_index=[]
     for i in range(len(MouseX) - 1): #saber index de duplicates
         if (MouseX[i] == MouseX[i + 1]) and (MouseY[i] == MouseY[i + 1]):
@@ -1253,15 +1398,6 @@ def createDictionary(df):
     #         print(MouseClicks[i])
     #         MouseClicks[i-1]=1
 
-    clickIndex=[]
-    ClickCounterOriginal=0
-    for i in range(len(MouseClicks)):
-        if MouseClicks[i]==1:
-            clickIndex.append(i)
-            ClickCounterOriginal =ClickCounterOriginal+1
-    print('NR DE CLICKS')
-    print(ClickCounterOriginal)
-
     MouseClicks=np.delete(MouseClicks, lista_index)
 
 
@@ -1279,7 +1415,7 @@ def createDictionary(df):
 
 
 
-    MouseTime.sort() #o sort do df nao esta a funcionar por alguma razao- isto garante que o MouseTime é sempre crescente
+    # MouseTime.sort() #o sort do df nao esta a funcionar por alguma razao- isto garante que o MouseTime é sempre crescente
 
     numberStrokes=0
     cutTime=[]
@@ -1547,7 +1683,11 @@ def updateDropdownSearch(selected_options):
       curvatures='Curvature',
       w='Angular Velocity',
       var_curvatures='Variation of Curvature',
-      ss='Space Traveled'
+      ss='Space Traveled',
+        clicksPause='Clicks-Pauses',
+        clicksDuration='Clicks- Duration',
+        clicksNumber='Clicks- Counter'
+
          )
     # spaceVar_Dict=dict(
     #
@@ -1735,7 +1875,6 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
 
                 matchInitial = np.array(matches['matchInitial'])
                 matchFinal = np.array(matches['matchFinal'])
-                print('merda funciona')
                 print(matchInitial)
                 print(matches)
 
@@ -1748,7 +1887,6 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
                 matches_final=[]
                 for i in range(len(matchFinal[j])): #cria uma lista com os indexes de todas as matches
                     matches_final.extend(range(matchInitial[j][i], matchFinal[j][i])) #nao considera a matchFinal como match, seria preciso por +1 aqui
-                print('heckye')
                 print(matches_final)
                 # print(matches_final)
                 if (len(matchInitial[j])>0 and len(matchFinal[j])>0 ):
@@ -1972,28 +2110,35 @@ def SCParser(parse, selector, data):
                 finalString[j].append(RiseAmp(data['data']['data'][j]['y'], float(parse[j][i + 1])))  # nao sei se esta a fazer bem
 
             elif (parse[j][i] == 'DUP'):
-                # Function 2nd Derivative
-                print('ayyy')
+                # Function Duplicates
                 finalString[j].append(findDuplicates(data['data']['data'][j]['y']))
-                print(finalString)
+
+            elif (parse[j][i] == '-'):
+                # Function Duplicates
+                finalString[j].append(isFlat(data['data']['data'][j]['y']))
 
         finalString[j] = merge_chars(np.array(finalString[j]))
-    print('pullup')
-    print(finalString)
+
     return finalString
 
 @app.callback(
-    dash.dependencies.Output('SCtext', 'value'),[
+    dash.dependencies.Output('SCtext', 'value'),
+    [
     dash.dependencies.Input('Amp', 'n_clicks'),
     dash.dependencies.Input('diff1', 'n_clicks'),
     dash.dependencies.Input('diff2', 'n_clicks'),
     dash.dependencies.Input('riseamp', 'n_clicks'),
     dash.dependencies.Input('relAmp', 'n_clicks'),
-    dash.dependencies.Input('duplicate', 'n_clicks')],
-    [dash.dependencies.State('SCtext', 'value')]
+    dash.dependencies.Input('duplicate', 'n_clicks'),
+    dash.dependencies.Input('isFlat', 'n_clicks')],
+    [dash.dependencies.State('timevar_graph_PP', 'figure'),
+    dash.dependencies.State('PreProcessing', 'value'),
+     dash.dependencies.State('SCtext', 'value')]
 )
-def SymbolicConnotationWrite(a1,a2,a3,a4, a5,a6, finalStr):
-    global  preva1, preva2, preva3, preva4, preva5, preva6 #banhada com variaveis globais para funcionar, convem mudar
+def SymbolicConnotationWrite( a1,a2,a3,a4, a5,a6,a7,data, PPtext, finalStr):
+    global  preva1, preva2, preva3, preva4, preva5, preva6, preva7 #banhada com variaveis globais para funcionar, convem mudar
+
+    preva7=0
     if(a1!= None): # tem o problema de nao limpar, se calhar precisa de um botao para limpar
         if(a1>preva1): #Amplitude
             finalStr+= '%A '
@@ -2013,14 +2158,34 @@ def SymbolicConnotationWrite(a1,a2,a3,a4, a5,a6, finalStr):
         if (a4 >preva4):
             finalStr +="R "
         preva4 = a4
+
     if (a5 != None):  # RiseAmp
-        if (a5 > preva4):
+        if (a5 > preva5):
             finalStr += "↥A "
         preva5 = a5
+
     if (a6 != None):  # Duplicates
-        if (a6 > preva4):
+        if (a6 > preva6):
             finalStr += "DUP "
-        preva5 = a6
+        preva6 = a6
+
+    if (a7 != None):  # isFlat
+        if (a7> preva7):
+            finalStr += "- "
+        preva7= a7
+
+    # if b1!='None':
+    print('milly')
+    print(str(PPtext))
+    if (str(PPtext)=='Guide/Fixed '):
+        print('diamondned')
+        thr=round(guideFixed(data['data']['data'][0]['y']),5)
+        finalStr += "%A "+str(thr)
+
+    if (str(PPtext)=='Scroll '):
+        print('ganggang')
+        finalStr += "- "
+
     return str(finalStr)
 
 
@@ -2148,8 +2313,8 @@ def PreProcessStringParser(n_clicks, data, parse, parse1, parse2, time_Vars):
     # print(parse2)
     # print(data['data'][0])
     # print(data['data'][1])
-    print('antespp')
-    print(len(data['data'][0]['x']))
+    # print('antespp')
+    # print(len(data['data'][0]['x']))
     if (n_clicks != None):
         if(n_clicks>lastclick): # para fazer com que o graf so se altere quando clicamos no botao e nao devido aos outros callbacks-grafico ou input box
 
@@ -2212,11 +2377,16 @@ def PreProcessStringParser(n_clicks, data, parse, parse1, parse2, time_Vars):
     dash.dependencies.Input('lowpass', 'n_clicks'),
     dash.dependencies.Input('bandpass', 'n_clicks'),
     dash.dependencies.Input('smooth', 'n_clicks'),
-    dash.dependencies.Input('absolute', 'n_clicks')],
+    dash.dependencies.Input('absolute', 'n_clicks'),
+    dash.dependencies.Input('guideFixed', 'n_clicks'),
+    dash.dependencies.Input('scroll', 'n_clicks')],
     [dash.dependencies.State('PreProcessing', 'value')]
 )
-def PreProcessingWrite(b1,b2,b3,b4,b5, finalStr):
-    global  prevb1, prevb2, prevb3, prevb4, prevb5 #banhada com variaveis globais para funcionar, convem mudar
+def PreProcessingWrite(b1,b2,b3,b4,b5, b6, b7,finalStr):
+    global  prevb1, prevb2, prevb3, prevb4, prevb5, prevb6, prevb7 #banhada com variaveis globais para funcionar, convem mudar
+
+    prevb6=0
+    prevb7=0
     if(b1!= None): # tem o problema de nao limpar, se calhar precisa de um botao para limpar
         if(b1>prevb1): #o upgrade/downgrade fez com que isto ficasse a 1 cada vez que e clicado
             finalStr+= 'H '
@@ -2241,6 +2411,16 @@ def PreProcessingWrite(b1,b2,b3,b4,b5, finalStr):
         if (b5 >prevb5):
             finalStr +="ABS "
         prevb5 = b5
+
+    if (b6 != None):
+        if (b6 >prevb6):
+            finalStr +="Guide/Fixed "
+        prevb6 = b6
+
+    if (b7 != None):
+        if (b7 >prevb7):
+            finalStr +="Scroll"
+        prevb7= b7
 
     return finalStr
 
@@ -2418,10 +2598,11 @@ def update_timevarfigure(selected_option, values):
      dash.dependencies.Input('hiddenDiv', 'children'),
      dash.dependencies.Input('hiddenDiv_timevar', 'children'),
     dash.dependencies.Input('DropdownAndOr', 'value'),
-      dash.dependencies.Input('upload-image', 'contents')
+      dash.dependencies.Input('upload-image', 'contents'),
+      dash.dependencies.Input('lengthRadio', 'value')
      # dash.dependencies.Input('sliderpos', 'value')
      ])
-def interpolate_graf(value, json_data, timevar, logic, image):
+def interpolate_graf(value, json_data, timevar, logic, image, length):
     global MouseDict
     global space_var
     global time_var
@@ -2433,7 +2614,6 @@ def interpolate_graf(value, json_data, timevar, logic, image):
     # if image!=None:
     #     print('banana')
     matches = json.loads(json_data)
-
 
     timevar=json.loads(timevar)
     # print(timevar)
@@ -2733,7 +2913,7 @@ def interpolate_graf(value, json_data, timevar, logic, image):
         time_array=np.array(MouseDict['t'])
         listA=["vt", "vx", "vy", "a", "jerk"]
         listB=["xt", "yt"]
-        listC=['straight', 'lenStrokes', 'pausescumsum', 'time', 'clicks', 'x', 'y']
+        listC=['straight', 'lenStrokes', 'pausescumsum', 'time', 'clicks', 'x', 'y', 'clicksNumber', 'clicksDuration', 'clicksPause']
         listD=['curvatures', 'angles', 'w', 'var_curvatures', 'xs', 'ys', 'ss']
 
         # print(time_var['ttv'][matchInitial[0][0]])
@@ -2815,13 +2995,15 @@ def interpolate_graf(value, json_data, timevar, logic, image):
         # nova_lista=np.array((nova_lista))
         # nova_lista=np.rint(nova_lista).astype(int)
         # print(timevar)
-        if 'clicks' not in timevar:  #o clicks tem de ser feito com o vector original,NOTE: ISTO PODE ESTAR MAL
-            Xpos = np.array(MouseDict['x'])
-            Ypos = np.array(MouseDict['y'])
-        else:
-
+        if timevar[0] in {'clicks', 'clicksNumber','clicksDuration', 'clicksPause'}: #TODO: So esta a verificar se o primeiro é clicks,mas tem de ver todos
+            print('tiddyboi')#o clicks tem de ser feito com o vector original,NOTE: ISTO PODE ESTAR MAL
             Xpos = np.array(MouseDictOriginal['x'])
             Ypos = np.array(MouseDictOriginal['y'])
+
+        else:
+            Xpos = np.array(MouseDict['x'])
+            Ypos = np.array(MouseDict['y'])
+
 
         if (logic=='AND'): #HA UM ALGORITMO MELHOR PARA ISTO FOR SURE- encontrar os duplicates nas nested lists
             duplicates_list=[]
@@ -2836,6 +3018,13 @@ def interpolate_graf(value, json_data, timevar, logic, image):
             final_list=np.array(duplicates_list)
             # print('final')
             # print(final_list)
+
+            subsequenceList = find_subsequences(final_list)
+            if(length=='long'):
+                final_list=max(subsequenceList, key=len)
+            elif( length =='short'):
+                final_list = min(subsequenceList, key=len)
+
             traces.append(go.Scatter(
                 x=Xpos[final_list],
                 y=Ypos[final_list],
@@ -2858,6 +3047,11 @@ def interpolate_graf(value, json_data, timevar, logic, image):
 
         elif(logic=='OR'):
             for i in range(len(final_list)):
+                subsequenceList = find_subsequences(final_list[i])
+                if (length == 'long'):
+                    final_list [i]= max(subsequenceList, key=len)
+                elif (length == 'short'):
+                    final_list[i] = min(subsequenceList, key=len)
                 traces.append(go.Scatter(
                         x=Xpos[final_list[i]],
                         y=Ypos[final_list[i]],
@@ -2871,7 +3065,7 @@ def interpolate_graf(value, json_data, timevar, logic, image):
                         marker={'size': 5,
                                 # 'color': '#A7CCED'
                                 },
-                        name="Matches"+ str(i)
+                        name="Matches "+ str(i)
                     ))
 
     return {

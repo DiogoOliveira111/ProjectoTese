@@ -98,3 +98,23 @@ def findDuplicates(s):
             final_String.append("1")
     return final_String
 
+def isFlat(s):
+    s1= []
+
+    for i in range(len(s)):
+        if i==len(s)-1:
+            if s[1]==s[i-1]:
+                s1.append("1")
+            else:
+                s1.append("0")
+        else:
+            if s[i]==s[i+1]:
+                s1.append("1")
+            else:
+                s1.append("0")
+    return s1
+
+def guideFixed(s):
+    maxS=max(s)
+    thr=1/maxS
+    return thr
