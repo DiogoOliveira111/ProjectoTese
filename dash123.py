@@ -15,7 +15,7 @@ import plotly.figure_factory as ff
 import json
 import pandas as pd
 from ProcessingMethods import smooth, lowpass, highpass, bandpass
-from SymbolicMethods import DiffC, Diff2C, RiseAmp, AmpC, absAmp, findDuplicates, isFlat, guideFixed
+from SymbolicMethods import DiffC, Diff2C, RiseAmp, AmpC, absAmp, findDuplicates, isFlat, guideFixed, maximum, minimum, average, averageUnique
 from AuxiliaryMethods import _plot, detect_peaks,merge_chars
 import base64
 import io
@@ -38,6 +38,8 @@ prevb2= 0
 prevb3= 0
 prevb4= 0
 prevb5=0
+click1=0
+click2=0
 
 lastclick=0
 lastclick1=0
@@ -893,7 +895,11 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                     html.Button('2D', id='diff2', style=styleB, title='2nd Derivative'),
                     html.Button('RA', id='riseamp', style=styleB, title='RiseAmp'),
                     html.Button('DUP', id='duplicate', style=styleB, title='Duplicate'),
-                    html.Button('Flat', id='isFlat', style=styleB, title='Flat')
+                    html.Button('Flat', id='isFlat', style=styleB, title='Flat'),
+                    html.Button('Max', id='max', style=styleB, title='Maximum Value'),
+                    html.Button('Min', id='min', style=styleB, title='Minimun Value'),
+                    html.Button('Average', id='avg', style=styleB, title='Average Value'),
+                    html.Button('Average Unique', id='avgU', style=styleB, title='Average that only counts unique values excluding 0')
 
 
                 ]
@@ -2030,6 +2036,44 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
         }
 
 @app.callback(
+    dash.dependencies.Output('dropdown_timevar', 'value'),
+    [dash.dependencies.Input('guideFixed', 'n_clicks'),
+     dash.dependencies.Input('scroll', 'n_clicks')],
+    [dash.dependencies.State('dropdown_timevar', 'value')]
+)
+def updateDropdowntimevar(guideClick, scrollClick, currentTimevars):
+    global click1
+    global click2
+
+    print('click')
+    print(guideClick)
+    print(currentTimevars)
+    if currentTimevars==None:
+        currentTimevars=[]
+    if guideClick!=None:
+        if guideClick>click1:
+            if len(currentTimevars)!=0:
+                if ('vt' not in currentTimevars):
+                    return ['vt']
+            else:
+                return ['vt']
+        click1=guideClick
+
+    if scrollClick != None:
+        if scrollClick>click2:
+            print(currentTimevars)
+            if len(currentTimevars) != 0:
+                print('ye')
+
+                if ({'xt', 'yt'} not in currentTimevars):
+                    return ['xt', 'yt']
+            else:
+                return ['xt', 'yt']
+        click2=scrollClick
+    else:
+        return None
+
+@app.callback(
     dash.dependencies.Output('SCtext1', 'style'),
     [dash.dependencies.Input('dropdown_timevar', 'value')]
 )
@@ -2114,9 +2158,26 @@ def SCParser(parse, selector, data):
                 finalString[j].append(findDuplicates(data['data']['data'][j]['y']))
 
             elif (parse[j][i] == '-'):
-                # Function Duplicates
+                # Function isFLat
                 finalString[j].append(isFlat(data['data']['data'][j]['y']))
 
+            elif (parse[j][i] == 'MAX'):
+                # Function MAximum
+                finalString[j].append(maximum(data['data']['data'][j]['y']))
+
+            elif (parse[j][i] == 'MIN'):
+                # Function Minimum
+                finalString[j].append(minimum(data['data']['data'][j]['y']))
+
+            elif (parse[j][i] == 'AVG'):
+                # Function Average
+                finalString[j].append(average(data['data']['data'][j]['y'], float(parse[j][i + 1])) )
+
+            elif (parse[j][i] == 'AVGU'):
+                # Function Unique Average
+                finalString[j].append(averageUnique(data['data']['data'][j]['y'], float(parse[j][i + 1])) )
+        print('biggeru')
+        print(finalString)
         finalString[j] = merge_chars(np.array(finalString[j]))
 
     return finalString
@@ -2130,15 +2191,24 @@ def SCParser(parse, selector, data):
     dash.dependencies.Input('riseamp', 'n_clicks'),
     dash.dependencies.Input('relAmp', 'n_clicks'),
     dash.dependencies.Input('duplicate', 'n_clicks'),
-    dash.dependencies.Input('isFlat', 'n_clicks')],
+    dash.dependencies.Input('isFlat', 'n_clicks'),
+    dash.dependencies.Input('max', 'n_clicks'),
+    dash.dependencies.Input('min', 'n_clicks'),
+    dash.dependencies.Input('avg', 'n_clicks'),
+    dash.dependencies.Input('avgU', 'n_clicks')],
     [dash.dependencies.State('timevar_graph_PP', 'figure'),
     dash.dependencies.State('PreProcessing', 'value'),
      dash.dependencies.State('SCtext', 'value')]
 )
-def SymbolicConnotationWrite( a1,a2,a3,a4, a5,a6,a7,data, PPtext, finalStr):
-    global  preva1, preva2, preva3, preva4, preva5, preva6, preva7 #banhada com variaveis globais para funcionar, convem mudar
+def SymbolicConnotationWrite( a1,a2,a3,a4, a5,a6,a7, a8 ,a9, a10, a11, data, PPtext, finalStr):
+    global  preva1, preva2, preva3, preva4, preva5, preva6, preva7, preva8, preva9, preva10, preva11 #banhada com variaveis globais para funcionar, convem mudar
 
     preva7=0
+    preva8=0
+    preva9=0
+    preva10=0
+    preva11=0
+
     if(a1!= None): # tem o problema de nao limpar, se calhar precisa de um botao para limpar
         if(a1>preva1): #Amplitude
             finalStr+= '%A '
@@ -2173,6 +2243,26 @@ def SymbolicConnotationWrite( a1,a2,a3,a4, a5,a6,a7,data, PPtext, finalStr):
         if (a7> preva7):
             finalStr += "- "
         preva7= a7
+
+    if (a8 != None):  # Maximum
+        if (a8> preva8):
+            finalStr += "MAX "
+        preva8= a8
+
+    if (a9 != None):  # Minimum
+        if (a9> preva9):
+            finalStr += "MIN "
+        preva9 = a9
+
+    if (a10 != None):  # Average
+        if (a10 > preva10):
+            finalStr += "AVG "
+        preva10 = a10
+
+    if (a11 != None):  # Average Unique
+        if (a11> preva11):
+            finalStr += "AVGU "
+        preva11 = a11
 
     # if b1!='None':
     print('milly')
@@ -3041,10 +3131,6 @@ def interpolate_graf(value, json_data, timevar, logic, image, length):
                 name="Matches"
             ))
 
-
-
-
-
         elif(logic=='OR'):
             for i in range(len(final_list)):
                 subsequenceList = find_subsequences(final_list[i])
@@ -3067,7 +3153,6 @@ def interpolate_graf(value, json_data, timevar, logic, image, length):
                                 },
                         name="Matches "+ str(i)
                     ))
-
     return {
             'data': traces,
             'layout': layout

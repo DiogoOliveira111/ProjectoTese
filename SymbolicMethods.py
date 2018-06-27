@@ -67,7 +67,7 @@ def RiseAmp(Signal, t):
 def AmpC(s, t, p='>'):
 
     if( s=='None'):
-        print('something missing he re')
+        print('something missing here')
     thr = (float(np.max(s) - np.min(s)) * t) + np.min(s)
     if (p == '<'):
         s1 = (s <= (thr)) * 1
@@ -118,3 +118,55 @@ def guideFixed(s):
     maxS=max(s)
     thr=1/maxS
     return thr
+
+def maximum(s):
+    max_value=max(s)
+    max_index=[i for i, j in enumerate(s) if j == max_value]
+    s1=np.zeros(len(s), dtype=int)
+    print(s1)
+    for i in max_index:
+        s1[i]="1"
+    print('giverer')
+    print(s1)
+    return s1
+
+
+def minimum(s):
+    min_value  = min(i for i in s if i > 0) #para garantir que o minimo nao é o zero
+    min_index = [i for i, j in enumerate(s) if j == min_value]
+    s1 = np.zeros(len(s), dtype=int)
+    for i in min_index:
+        s1[i] = "1"
+    return s1
+
+def average(s, thr):
+    s1 = np.zeros(len(s), dtype=int)
+    stringArray = np.array(s)
+    mean=stringArray[stringArray.nonzero()].mean() #para nao contar os zeros na media
+
+    thrS = thr * mean + mean  # threshold superior
+    thrI = thr * mean - mean  # threshold inferior
+    for i in range(len(s)):
+        if s[i]==0:
+            s1[i]="0"
+        elif s[i] <= thrS and s[i] >= thrI:
+            s1[i]="1"
+
+    return s1
+
+def averageUnique(s, thr):
+    s1=np.zeros(len(s), dtype=int)
+    uniqueValues=set(s)
+    uniqueValues.remove(0) #retirar os zeros que nao entram na media
+    print(uniqueValues)
+    stringList=list(uniqueValues)
+    mean=sum(stringList)/len(stringList)
+    thrS=thr*mean+mean #threshold superior
+    thrI=thr*mean-mean #threshold inferior
+    for i in range(len(s)):
+        if s[i]==0:
+            s1[i]="0"
+        elif s[i]<=thrS and s[i]>=thrI:
+            s1[i]="1"
+
+    return s1
