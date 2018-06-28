@@ -33,11 +33,25 @@ preva1= 0
 preva2= 0
 preva3= 0
 preva4= 0
+preva5=0
+preva6=0
+preva7 = 0
+preva8 = 0
+preva9 = 0
+preva10 = 0
+preva11 = 0
+prevclear=0
+
 prevb1= 0
 prevb2= 0
 prevb3= 0
 prevb4= 0
 prevb5=0
+prevb6 = 0
+prevb7 = 0
+prevbclear =0
+
+
 click1=0
 click2=0
 
@@ -831,6 +845,7 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                        })]),
 
             html.Div(children=[
+                html.Button('Clear Search', id='clear', style=styleB, title='Clear all boxes'),
                 html.H4(
                         children='Pre-Processing Step',
                         style={
@@ -2044,7 +2059,7 @@ def RegexParser(matches, n_clicks, data, timevars_final, timevars_initial):
 def updateDropdowntimevar(guideClick, scrollClick, currentTimevars):
     global click1
     global click2
-
+    timevar=[]
     print('click')
     print(guideClick)
     print(currentTimevars)
@@ -2054,9 +2069,9 @@ def updateDropdowntimevar(guideClick, scrollClick, currentTimevars):
         if guideClick>click1:
             if len(currentTimevars)!=0:
                 if ('vt' not in currentTimevars):
-                    return ['vt']
+                    timevar.append ('vt')
             else:
-                return ['vt']
+                timevar.append('vt')
         click1=guideClick
 
     if scrollClick != None:
@@ -2066,12 +2081,13 @@ def updateDropdowntimevar(guideClick, scrollClick, currentTimevars):
                 print('ye')
 
                 if ({'xt', 'yt'} not in currentTimevars):
-                    return ['xt', 'yt']
+                    timevar.append('xt')
+                    timevar.append( 'yt')
             else:
-                return ['xt', 'yt']
+                timevar.append('xt')
+                timevar.append('yt')
         click2=scrollClick
-    else:
-        return None
+    return timevar
 
 @app.callback(
     dash.dependencies.Output('SCtext1', 'style'),
@@ -2182,6 +2198,17 @@ def SCParser(parse, selector, data):
 
     return finalString
 
+#Clear regex input boxes
+@app.callback(
+    dash.dependencies.Output('regex', 'value'),
+    [dash.dependencies.Input('clear', 'n_clicks')]
+)
+def clearRegex(clear):
+    finalStr=""
+
+    return finalStr
+
+
 @app.callback(
     dash.dependencies.Output('SCtext', 'value'),
     [
@@ -2195,19 +2222,16 @@ def SCParser(parse, selector, data):
     dash.dependencies.Input('max', 'n_clicks'),
     dash.dependencies.Input('min', 'n_clicks'),
     dash.dependencies.Input('avg', 'n_clicks'),
-    dash.dependencies.Input('avgU', 'n_clicks')],
+    dash.dependencies.Input('avgU', 'n_clicks'),
+    dash.dependencies.Input('clear', 'n_clicks')],
     [dash.dependencies.State('timevar_graph_PP', 'figure'),
     dash.dependencies.State('PreProcessing', 'value'),
      dash.dependencies.State('SCtext', 'value')]
 )
-def SymbolicConnotationWrite( a1,a2,a3,a4, a5,a6,a7, a8 ,a9, a10, a11, data, PPtext, finalStr):
-    global  preva1, preva2, preva3, preva4, preva5, preva6, preva7, preva8, preva9, preva10, preva11 #banhada com variaveis globais para funcionar, convem mudar
+def SymbolicConnotationWrite( a1,a2,a3,a4, a5,a6,a7, a8 ,a9, a10, a11,clear, data, PPtext, finalStr):
+    global  preva1, preva2, preva3, preva4, preva5, preva6, preva7, preva8, preva9, preva10, preva11, prevclear #banhada com variaveis globais para funcionar, convem mudar
 
-    preva7=0
-    preva8=0
-    preva9=0
-    preva10=0
-    preva11=0
+
 
     if(a1!= None): # tem o problema de nao limpar, se calhar precisa de um botao para limpar
         if(a1>preva1): #Amplitude
@@ -2275,6 +2299,11 @@ def SymbolicConnotationWrite( a1,a2,a3,a4, a5,a6,a7, a8 ,a9, a10, a11, data, PPt
     if (str(PPtext)=='Scroll '):
         print('ganggang')
         finalStr += "- "
+
+    if (clear!= None):  # Clear
+        if (clear> prevclear):
+            finalStr = ""
+        prevclear = clear
 
     return str(finalStr)
 
@@ -2469,14 +2498,14 @@ def PreProcessStringParser(n_clicks, data, parse, parse1, parse2, time_Vars):
     dash.dependencies.Input('smooth', 'n_clicks'),
     dash.dependencies.Input('absolute', 'n_clicks'),
     dash.dependencies.Input('guideFixed', 'n_clicks'),
-    dash.dependencies.Input('scroll', 'n_clicks')],
+    dash.dependencies.Input('scroll', 'n_clicks'),
+    dash.dependencies.Input('clear', 'n_clicks')],
     [dash.dependencies.State('PreProcessing', 'value')]
 )
-def PreProcessingWrite(b1,b2,b3,b4,b5, b6, b7,finalStr):
-    global  prevb1, prevb2, prevb3, prevb4, prevb5, prevb6, prevb7 #banhada com variaveis globais para funcionar, convem mudar
+def PreProcessingWrite(b1,b2,b3,b4,b5, b6, b7,clear,finalStr):
+    global  prevb1, prevb2, prevb3, prevb4, prevb5, prevb6, prevb7, prevbclear #banhada com variaveis globais para funcionar, convem mudar
 
-    prevb6=0
-    prevb7=0
+
     if(b1!= None): # tem o problema de nao limpar, se calhar precisa de um botao para limpar
         if(b1>prevb1): #o upgrade/downgrade fez com que isto ficasse a 1 cada vez que e clicado
             finalStr+= 'H '
@@ -2511,6 +2540,11 @@ def PreProcessingWrite(b1,b2,b3,b4,b5, b6, b7,finalStr):
         if (b7 >prevb7):
             finalStr +="Scroll"
         prevb7= b7
+
+    if (clear != None):
+        if (clear>prevbclear):
+            finalStr =""
+        prevbclear= clear
 
     return finalStr
 
